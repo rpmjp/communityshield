@@ -1,0 +1,233 @@
+Phase 4C — Hierarchical classification
+Device: cuda
+
+Loaded: train 2,219,554  val 257,549  test 261,301
+Encoders: 25 districts, 30 locations
+
+================================================================================
+TOP-LEVEL: 4-class supercategory (property/violent/drug/other)
+================================================================================
+Classes: ['drug', 'other', 'property', 'violent']
+
+--- Training top-level (4-class) ---
+  train: (2219554, 12), val: (257549, 12), classes: 4
+[0]	val-mlogloss:1.34366
+[100]	val-mlogloss:0.95465
+[200]	val-mlogloss:0.94404
+[300]	val-mlogloss:0.93902
+[400]	val-mlogloss:0.93588
+[499]	val-mlogloss:0.93382
+  Trained in 8.9s, best iter 499
+
+  [Top-level val] acc=0.6011, macro_f1=0.4327
+              precision    recall  f1-score   support
+
+        drug      0.273     0.423     0.332      6180
+       other      0.290     0.112     0.162     27067
+    property      0.679     0.756     0.715    140088
+     violent      0.531     0.513     0.522     84214
+
+    accuracy                          0.601    257549
+   macro avg      0.443     0.451     0.433    257549
+weighted avg      0.580     0.601     0.585    257549
+
+
+  [Top-level test] acc=0.5991, macro_f1=0.4399
+              precision    recall  f1-score   support
+
+        drug      0.344     0.433     0.384      8531
+       other      0.259     0.096     0.140     27342
+    property      0.678     0.753     0.713    141839
+     violent      0.524     0.520     0.522     83589
+
+    accuracy                          0.599    261301
+   macro avg      0.451     0.451     0.440    261301
+weighted avg      0.574     0.599     0.581    261301
+
+
+================================================================================
+SUBTYPE MODEL: property
+================================================================================
+
+Subtype class distribution (train):
+  THEFT                                     497,227  (42.66%)
+  CRIMINAL DAMAGE                           249,307  (21.39%)
+  DECEPTIVE PRACTICE                        150,841  (12.94%)
+  MOTOR VEHICLE THEFT                       122,419  (10.50%)
+  BURGLARY                                   91,891  ( 7.88%)
+  CRIMINAL TRESPASS                          49,590  ( 4.25%)
+  ARSON                                       4,205  ( 0.36%)
+  Total: 1,165,480 train, 140,088 val, 141,839 test
+
+Classes: ['ARSON', 'BURGLARY', 'CRIMINAL DAMAGE', 'CRIMINAL TRESPASS', 'DECEPTIVE PRACTICE', 'MOTOR VEHICLE THEFT', 'THEFT']
+
+--- Training subtype-property ---
+  train: (1165480, 12), val: (140088, 12), classes: 7
+[0]	val-mlogloss:1.87519
+[100]	val-mlogloss:1.30842
+[200]	val-mlogloss:1.30274
+[300]	val-mlogloss:1.29954
+[400]	val-mlogloss:1.29822
+[499]	val-mlogloss:1.29715
+  Trained in 11.4s, best iter 499
+
+  [Subtype-property] eval on TRUE-property rows only (perfect routing):
+    acc=0.4423, macro_f1=0.3052
+                     precision    recall  f1-score   support
+
+              ARSON      0.008     0.012     0.010       403
+           BURGLARY      0.221     0.313     0.259     10804
+    CRIMINAL DAMAGE      0.373     0.248     0.298     28862
+  CRIMINAL TRESPASS      0.216     0.083     0.120      5991
+ DECEPTIVE PRACTICE      0.372     0.481     0.420     16088
+MOTOR VEHICLE THEFT      0.354     0.613     0.449     19291
+              THEFT      0.640     0.532     0.581     60400
+
+           accuracy                          0.442    141839
+          macro avg      0.312     0.326     0.305    141839
+       weighted avg      0.465     0.442     0.442    141839
+
+
+================================================================================
+SUBTYPE MODEL: violent
+================================================================================
+
+Subtype class distribution (train):
+  BATTERY                                   413,862  (56.66%)
+  ASSAULT                                   177,612  (24.31%)
+  ROBBERY                                    86,827  (11.89%)
+  OFFENSE INVOLVING CHILDREN                 18,222  ( 2.49%)
+  CRIMINAL SEXUAL ASSAULT                    13,090  ( 1.79%)
+  SEX OFFENSE                                 9,566  ( 1.31%)
+  HOMICIDE                                    6,061  ( 0.83%)
+  OTHER_VIOLENT                               2,799  ( 0.38%)
+  STALKING                                    2,428  ( 0.33%)
+  Total: 730,467 train, 84,214 val, 83,589 test
+
+Classes: ['ASSAULT', 'BATTERY', 'CRIMINAL SEXUAL ASSAULT', 'HOMICIDE', 'OFFENSE INVOLVING CHILDREN', 'OTHER_VIOLENT', 'ROBBERY', 'SEX OFFENSE', 'STALKING']
+
+--- Training subtype-violent ---
+  train: (730467, 12), val: (84214, 12), classes: 9
+[0]	val-mlogloss:2.09908
+[100]	val-mlogloss:1.27869
+[200]	val-mlogloss:1.26981
+[300]	val-mlogloss:1.26442
+[400]	val-mlogloss:1.26031
+[499]	val-mlogloss:1.25658
+  Trained in 12.1s, best iter 499
+
+  [Subtype-violent] eval on TRUE-violent rows only (perfect routing):
+    acc=0.5047, macro_f1=0.1908
+                            precision    recall  f1-score   support
+
+                   ASSAULT      0.417     0.249     0.312     23745
+                   BATTERY      0.620     0.700     0.657     47107
+   CRIMINAL SEXUAL ASSAULT      0.207     0.135     0.163      1857
+                  HOMICIDE      0.081     0.132     0.101       469
+OFFENSE INVOLVING CHILDREN      0.138     0.151     0.144      1707
+             OTHER_VIOLENT      0.020     0.007     0.011       278
+                   ROBBERY      0.229     0.425     0.298      6367
+               SEX OFFENSE      0.055     0.013     0.020      1438
+                  STALKING      0.035     0.006     0.011       621
+
+                  accuracy                          0.505     83589
+                 macro avg      0.200     0.202     0.191     83589
+              weighted avg      0.494     0.505     0.489     83589
+
+
+================================================================================
+SUBTYPE MODEL: drug
+================================================================================
+
+Subtype class distribution (train):
+  NARCOTICS                                  94,747  (96.88%)
+  LIQUOR LAW VIOLATION                        1,917  ( 1.96%)
+  GAMBLING                                    1,095  ( 1.12%)
+  OTHER_DRUG                                     44  ( 0.04%)
+  Total: 97,803 train, 6,180 val, 8,531 test
+
+Classes: ['GAMBLING', 'LIQUOR LAW VIOLATION', 'NARCOTICS', 'OTHER_DRUG']
+
+--- Training subtype-drug ---
+  train: (97803, 12), val: (6180, 12), classes: 4
+[0]	val-mlogloss:1.23014
+[100]	val-mlogloss:0.12970
+[200]	val-mlogloss:0.11428
+[300]	val-mlogloss:0.10541
+[400]	val-mlogloss:0.10130
+[462]	val-mlogloss:0.10107
+  Trained in 2.9s, best iter 422
+
+  [Subtype-drug] eval on TRUE-drug rows only (perfect routing):
+    acc=0.9775, macro_f1=0.4259
+                      precision    recall  f1-score   support
+
+            GAMBLING      0.037     0.077     0.050        13
+LIQUOR LAW VIOLATION      0.696     0.637     0.665       223
+           NARCOTICS      0.988     0.989     0.989      8285
+          OTHER_DRUG      0.000     0.000     0.000        10
+
+            accuracy                          0.977      8531
+           macro avg      0.430     0.426     0.426      8531
+        weighted avg      0.978     0.977     0.978      8531
+
+
+================================================================================
+SUBTYPE MODEL: other
+================================================================================
+
+Subtype class distribution (train):
+  OTHER OFFENSE                             140,970  (62.43%)
+  WEAPONS VIOLATION                          57,910  (25.65%)
+  PUBLIC PEACE VIOLATION                     11,812  ( 5.23%)
+  INTERFERENCE WITH PUBLIC OFFICER            8,117  ( 3.59%)
+  PROSTITUTION                                5,114  ( 2.26%)
+  CONCEALED CARRY LICENSE VIOLATION           1,206  ( 0.53%)
+  OTHER_OTHER                                   675  ( 0.30%)
+  Total: 225,804 train, 27,067 val, 27,342 test
+
+Classes: ['CONCEALED CARRY LICENSE VIOLATION', 'INTERFERENCE WITH PUBLIC OFFICER', 'OTHER OFFENSE', 'OTHER_OTHER', 'PROSTITUTION', 'PUBLIC PEACE VIOLATION', 'WEAPONS VIOLATION']
+
+--- Training subtype-other ---
+  train: (225804, 12), val: (27067, 12), classes: 7
+[0]	val-mlogloss:1.79763
+[100]	val-mlogloss:0.81840
+[200]	val-mlogloss:0.80440
+[300]	val-mlogloss:0.79598
+[400]	val-mlogloss:0.79100
+[499]	val-mlogloss:0.78902
+  Trained in 7.0s, best iter 499
+
+  [Subtype-other] eval on TRUE-other rows only (perfect routing):
+    acc=0.6902, macro_f1=0.3543
+                                   precision    recall  f1-score   support
+
+CONCEALED CARRY LICENSE VIOLATION      0.381     0.275     0.320       298
+ INTERFERENCE WITH PUBLIC OFFICER      0.124     0.072     0.091      1046
+                    OTHER OFFENSE      0.862     0.778     0.818     18527
+                      OTHER_OTHER      0.000     0.000     0.000        99
+                     PROSTITUTION      0.442     0.695     0.540       203
+           PUBLIC PEACE VIOLATION      0.199     0.140     0.165      1182
+                WEAPONS VIOLATION      0.463     0.667     0.547      5987
+
+                         accuracy                          0.690     27342
+                        macro avg      0.353     0.375     0.354     27342
+                     weighted avg      0.706     0.690     0.692     27342
+
+
+================================================================================
+FULL PIPELINE EVALUATION ON TEST SET
+================================================================================
+
+Final label space: 27 classes
+
+[SOFT routing] top-1 acc=0.2953  top-3=0.5797  top-5=0.7457  macro_f1=0.1267
+[HARD routing] top-1 acc=0.3075  macro_f1=0.1238
+
+Baseline (predict majority final class): 0.2312
+Soft routing lift over baseline: +6.41pp
+
+Saved:
+  /home/robert/projects/communityshield/ml/artifacts/hierarchical_model.joblib
+  /home/robert/projects/communityshield/ml/artifacts/hierarchical_metrics.json
+  /home/robert/projects/communityshield/ml/artifacts/hierarchical_log.txt

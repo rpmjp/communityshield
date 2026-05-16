@@ -1,0 +1,86 @@
+{
+  "top_level": {
+    "val": {
+      "accuracy": 0.6011127979530109,
+      "macro_f1": 0.43266449690654474
+    },
+    "test": {
+      "accuracy": 0.5991213198571762,
+      "macro_f1": 0.43989658668637543
+    }
+  },
+  "subtype": {
+    "property": {
+      "perfect_routing": {
+        "accuracy": 0.44233955400136776,
+        "macro_f1": 0.30515724952527495,
+        "n_classes": 7,
+        "n_test_rows": 141839
+      },
+      "train_seconds": 11.408963680267334
+    },
+    "violent": {
+      "perfect_routing": {
+        "accuracy": 0.5047314838076781,
+        "macro_f1": 0.19075838978019385,
+        "n_classes": 9,
+        "n_test_rows": 83589
+      },
+      "train_seconds": 12.077664613723755
+    },
+    "drug": {
+      "perfect_routing": {
+        "accuracy": 0.9774938459735084,
+        "macro_f1": 0.42592669941767664,
+        "n_classes": 4,
+        "n_test_rows": 8531
+      },
+      "train_seconds": 2.86327862739563
+    },
+    "other": {
+      "perfect_routing": {
+        "accuracy": 0.6902201740911418,
+        "macro_f1": 0.35427375500091546,
+        "n_classes": 7,
+        "n_test_rows": 27342
+      },
+      "train_seconds": 6.984310865402222
+    }
+  },
+  "subtype_subset_size": {
+    "property": {
+      "train": 1165480,
+      "val": 140088,
+      "test": 141839
+    },
+    "violent": {
+      "train": 730467,
+      "val": 84214,
+      "test": 83589
+    },
+    "drug": {
+      "train": 97803,
+      "val": 6180,
+      "test": 8531
+    },
+    "other": {
+      "train": 225804,
+      "val": 27067,
+      "test": 27342
+    }
+  },
+  "full_pipeline_test": {
+    "soft_routing": {
+      "top1_accuracy": 0.29529163684792636,
+      "top3_accuracy": 0.5796877930050018,
+      "top5_accuracy": 0.7456802691149288,
+      "macro_f1": 0.12665727013117623
+    },
+    "hard_routing": {
+      "top1_accuracy": 0.30750360695137025,
+      "macro_f1": 0.1238369325298271
+    },
+    "baseline_accuracy": 0.23115104802507452,
+    "soft_lift_over_baseline_pp": 6.414058882285184
+  }
+}

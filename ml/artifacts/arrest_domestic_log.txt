@@ -1,0 +1,237 @@
+Phase 4D — Arrest + Domestic binary classifiers
+Device: cuda
+
+Loaded: train 2,219,554  val 257,549  test 261,301
+Encoders: 25 districts, 30 locations, 33 crime types
+
+Class balance:
+  arrest:   train 18.02%  val 13.84%  test 15.94%
+  domestic: train 19.60%  val 18.36%  test 19.13%
+
+################################################################################
+# MODEL 1: ARREST PREDICTION
+################################################################################
+
+================================================================================
+TRAINING: arrest
+  train shape: (2219554, 13), val shape: (257549, 13)
+  class balance (train): 18.02% positive
+================================================================================
+
+Training (600 rounds, log every 25)...
+  [round   0] acc=0.8616  auc=0.8399  macro_f1=0.4628  neg_recall=1.000  pos_recall=0.000
+  [round  25] acc=0.8880  auc=0.8464  macro_f1=0.7378  neg_recall=0.955  pos_recall=0.474
+  [round  50] acc=0.8869  auc=0.8502  macro_f1=0.7406  neg_recall=0.950  pos_recall=0.491
+  [round  75] acc=0.8877  auc=0.8525  macro_f1=0.7426  neg_recall=0.951  pos_recall=0.495
+  [round 100] acc=0.8887  auc=0.8539  macro_f1=0.7450  neg_recall=0.951  pos_recall=0.499
+  [round 125] acc=0.8896  auc=0.8549  macro_f1=0.7466  neg_recall=0.952  pos_recall=0.500
+  [round 150] acc=0.8897  auc=0.8555  macro_f1=0.7470  neg_recall=0.952  pos_recall=0.501
+  [round 175] acc=0.8899  auc=0.8562  macro_f1=0.7475  neg_recall=0.952  pos_recall=0.502
+  [round 200] acc=0.8902  auc=0.8566  macro_f1=0.7482  neg_recall=0.952  pos_recall=0.503
+  [round 225] acc=0.8902  auc=0.8570  macro_f1=0.7485  neg_recall=0.952  pos_recall=0.504
+  [round 250] acc=0.8901  auc=0.8572  macro_f1=0.7486  neg_recall=0.952  pos_recall=0.505
+  [round 275] acc=0.8899  auc=0.8573  macro_f1=0.7485  neg_recall=0.952  pos_recall=0.506
+  [round 300] acc=0.8897  auc=0.8575  macro_f1=0.7483  neg_recall=0.951  pos_recall=0.507
+  [round 325] acc=0.8895  auc=0.8575  macro_f1=0.7483  neg_recall=0.951  pos_recall=0.507
+  [round 350] acc=0.8895  auc=0.8576  macro_f1=0.7484  neg_recall=0.951  pos_recall=0.508
+  [round 375] acc=0.8894  auc=0.8576  macro_f1=0.7485  neg_recall=0.950  pos_recall=0.509
+  [round 400] acc=0.8893  auc=0.8575  macro_f1=0.7486  neg_recall=0.950  pos_recall=0.510
+
+Trained in 8.8s, best iter 379
+
+--- train ---
+  accuracy: 0.8924  (baseline 0.8198, lift +7.27pp)
+  macro_f1: 0.7986
+  weighted_f1: 0.8865
+  roc_auc:  0.8928
+
+  per-class report:
+              precision    recall  f1-score   support
+
+    negative      0.913     0.961     0.936   1819504
+    positive      0.765     0.582     0.661    400050
+
+    accuracy                          0.892   2219554
+   macro avg      0.839     0.771     0.799   2219554
+weighted avg      0.886     0.892     0.886   2219554
+
+  confusion matrix:
+                   pred_neg   pred_pos
+    true_neg      1,747,924     71,580
+    true_pos        167,194    232,856
+
+--- val ---
+  accuracy: 0.8894  (baseline 0.8616, lift +2.78pp)
+  macro_f1: 0.7487
+  weighted_f1: 0.8847
+  roc_auc:  0.8576
+
+  per-class report:
+              precision    recall  f1-score   support
+
+    negative      0.924     0.950     0.937    221903
+    positive      0.623     0.510     0.561     35646
+
+    accuracy                          0.889    257549
+   macro avg      0.773     0.730     0.749    257549
+weighted avg      0.882     0.889     0.885    257549
+
+  confusion matrix:
+                   pred_neg   pred_pos
+    true_neg        210,878     11,025
+    true_pos         17,463     18,183
+
+--- test ---
+  accuracy: 0.8787  (baseline 0.8406, lift +3.81pp)
+  macro_f1: 0.7538
+  weighted_f1: 0.8733
+  roc_auc:  0.8594
+
+  per-class report:
+              precision    recall  f1-score   support
+
+    negative      0.913     0.946     0.929    219640
+    positive      0.649     0.522     0.579     41661
+
+    accuracy                          0.879    261301
+   macro avg      0.781     0.734     0.754    261301
+weighted avg      0.870     0.879     0.873    261301
+
+  confusion matrix:
+                   pred_neg   pred_pos
+    true_neg        207,852     11,788
+    true_pos         19,908     21,753
+
+--- Threshold analysis (arrest) ---
+   threshold  precision     recall         f1   accuracy
+        0.20     0.3094     0.8778     0.4575     0.6681
+        0.30     0.3921     0.7470     0.5143     0.7750
+        0.40     0.5242     0.6011     0.5600     0.8494
+        0.50     0.6485     0.5221     0.5785     0.8787
+        0.60     0.7330     0.4727     0.5747     0.8885
+        0.70     0.7976     0.4230     0.5528     0.8909
+        0.80     0.8650     0.3589     0.5073     0.8889
+
+Saved /home/robert/projects/communityshield/ml/artifacts/arrest_model.joblib
+
+
+################################################################################
+# MODEL 2: DOMESTIC INCIDENT PREDICTION
+################################################################################
+
+================================================================================
+TRAINING: domestic
+  train shape: (2219554, 13), val shape: (257549, 13)
+  class balance (train): 19.60% positive
+================================================================================
+
+Training (600 rounds, log every 25)...
+  [round   0] acc=0.8164  auc=0.9098  macro_f1=0.4494  neg_recall=1.000  pos_recall=0.000
+  [round  25] acc=0.8745  auc=0.9161  macro_f1=0.8003  neg_recall=0.909  pos_recall=0.722
+  [round  50] acc=0.8722  auc=0.9178  macro_f1=0.7998  neg_recall=0.903  pos_recall=0.737
+  [round  75] acc=0.8718  auc=0.9185  macro_f1=0.8002  neg_recall=0.901  pos_recall=0.743
+  [round 100] acc=0.8718  auc=0.9189  macro_f1=0.8005  neg_recall=0.900  pos_recall=0.746
+  [round 125] acc=0.8717  auc=0.9192  macro_f1=0.8007  neg_recall=0.900  pos_recall=0.748
+  [round 150] acc=0.8717  auc=0.9194  macro_f1=0.8008  neg_recall=0.899  pos_recall=0.749
+  [round 175] acc=0.8718  auc=0.9196  macro_f1=0.8009  neg_recall=0.899  pos_recall=0.749
+  [round 200] acc=0.8717  auc=0.9197  macro_f1=0.8010  neg_recall=0.899  pos_recall=0.750
+  [round 225] acc=0.8718  auc=0.9198  macro_f1=0.8010  neg_recall=0.899  pos_recall=0.750
+  [round 250] acc=0.8717  auc=0.9199  macro_f1=0.8009  neg_recall=0.899  pos_recall=0.750
+  [round 275] acc=0.8716  auc=0.9199  macro_f1=0.8009  neg_recall=0.899  pos_recall=0.751
+  [round 300] acc=0.8715  auc=0.9199  macro_f1=0.8008  neg_recall=0.899  pos_recall=0.751
+  [round 325] acc=0.8715  auc=0.9200  macro_f1=0.8009  neg_recall=0.899  pos_recall=0.751
+  [round 350] acc=0.8715  auc=0.9201  macro_f1=0.8009  neg_recall=0.898  pos_recall=0.752
+  [round 375] acc=0.8714  auc=0.9201  macro_f1=0.8008  neg_recall=0.898  pos_recall=0.752
+  [round 400] acc=0.8713  auc=0.9201  macro_f1=0.8008  neg_recall=0.898  pos_recall=0.752
+  [round 425] acc=0.8714  auc=0.9201  macro_f1=0.8010  neg_recall=0.898  pos_recall=0.753
+  [round 450] acc=0.8713  auc=0.9201  macro_f1=0.8008  neg_recall=0.898  pos_recall=0.752
+  [round 475] acc=0.8714  auc=0.9201  macro_f1=0.8009  neg_recall=0.898  pos_recall=0.752
+  [round 500] acc=0.8714  auc=0.9201  macro_f1=0.8009  neg_recall=0.898  pos_recall=0.753
+  [round 525] acc=0.8714  auc=0.9201  macro_f1=0.8010  neg_recall=0.898  pos_recall=0.753
+
+Trained in 11.1s, best iter 489
+
+--- train ---
+  accuracy: 0.8779  (baseline 0.8040, lift +7.39pp)
+  macro_f1: 0.8163
+  weighted_f1: 0.8810
+  roc_auc:  0.9327
+
+  per-class report:
+              precision    recall  f1-score   support
+
+    negative      0.940     0.906     0.923   1784527
+    positive      0.664     0.762     0.710    435027
+
+    accuracy                          0.878   2219554
+   macro avg      0.802     0.834     0.816   2219554
+weighted avg      0.886     0.878     0.881   2219554
+
+  confusion matrix:
+                   pred_neg   pred_pos
+    true_neg      1,616,849    167,678
+    true_pos        103,375    331,652
+
+--- val ---
+  accuracy: 0.8715  (baseline 0.8164, lift +5.51pp)
+  macro_f1: 0.8011
+  weighted_f1: 0.8760
+  roc_auc:  0.9201
+
+  per-class report:
+              precision    recall  f1-score   support
+
+    negative      0.942     0.898     0.919    210253
+    positive      0.624     0.753     0.683     47296
+
+    accuracy                          0.871    257549
+   macro avg      0.783     0.826     0.801    257549
+weighted avg      0.884     0.871     0.876    257549
+
+  confusion matrix:
+                   pred_neg   pred_pos
+    true_neg        188,824     21,429
+    true_pos         11,669     35,627
+
+--- test ---
+  accuracy: 0.8663  (baseline 0.8087, lift +5.76pp)
+  macro_f1: 0.7983
+  weighted_f1: 0.8706
+  roc_auc:  0.9164
+
+  per-class report:
+              precision    recall  f1-score   support
+
+    negative      0.937     0.895     0.915    211310
+    positive      0.626     0.747     0.681     49991
+
+    accuracy                          0.866    261301
+   macro avg      0.782     0.821     0.798    261301
+weighted avg      0.878     0.866     0.871    261301
+
+  confusion matrix:
+                   pred_neg   pred_pos
+    true_neg        189,029     22,281
+    true_pos         12,654     37,337
+
+--- Threshold analysis (domestic) ---
+   threshold  precision     recall         f1   accuracy
+        0.20     0.4354     0.9270     0.5926     0.7561
+        0.30     0.4962     0.8829     0.6354     0.8061
+        0.40     0.5613     0.8212     0.6669     0.8430
+        0.50     0.6263     0.7469     0.6813     0.8663
+        0.60     0.6828     0.6695     0.6761     0.8773
+        0.70     0.7470     0.5649     0.6433     0.8802
+        0.80     0.8227     0.4449     0.5775     0.8755
+
+Saved /home/robert/projects/communityshield/ml/artifacts/domestic_model.joblib
+
+
+################################################################################
+# PHASE 4D SUMMARY
+################################################################################
+
+model               accuracy     macro_f1      roc_auc    train_sec
+---------------------------------------------------------------------------
+arrest                0.8787       0.7538       0.8594          8.8
+domestic              0.8663       0.7983       0.9164         11.1

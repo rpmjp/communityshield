@@ -7,32 +7,30 @@ Identifiers (dropped before training):
     year            int year
 
 Target candidates:
-    primary_type    str, multiclass target (e.g. THEFT, BATTERY, ASSAULT)
+    primary_type    str, multiclass target
     arrest          int8 {0,1}, binary target
     domestic        int8 {0,1}, binary target
 
-Features (used for training):
+Features:
     hour            int8 [0,23]
     day_of_week     int8 [0,6], 0=Monday
     month           int8 [1,12]
     is_weekend      int8 {0,1}
     quarter         int8 [1,4]
-    shift           int8 {0,1,2}, 0=Day(7-15), 1=Evening(15-23), 2=Midnight(23-7)
+    shift           int8 {0,1,2}
     beat_num        Int32, police beat number
     district        str, police district
     community_area  int, Chicago community area code [1-77]
     latitude        float64
     longitude       float64
+    location_group  str, encoded location_description grouped to top-30
+                    + "other" bucket. Captures setting context
+                    (STREET, RESIDENCE, APARTMENT, etc) that hour/lat/lng
+                    alone don't carry.
 
 Split column:
-    split           str {train,val,test}
-      train: 2015-2023  (~2.2M rows)
-      val:   2024       (~260K rows)
-      test:  2025-2026  (~260K rows)
-
-NO TEMPORAL LEAKAGE: years are strictly partitioned. Model never sees future
-data during training. Validation hyperparameter tuning uses 2024 only. Final
-metrics reported on 2025-2026 holdout test set.
+    split           train (2015-2023), val (2024), test (2025-2026)
+    NO TEMPORAL LEAKAGE.
 """
 from __future__ import annotations
 
@@ -71,7 +69,8 @@ def fetch_crimes(city_slug: str, min_year: int = 2015) -> pd.DataFrame:
             c.district,
             c.community_area,
             c.latitude,
-            c.longitude
+            c.longitude,
+            c.location_description
         FROM crimes c
         JOIN cities ct ON ct.id = c.city_id
         WHERE ct.slug = %(slug)s
@@ -89,10 +88,27 @@ def fetch_crimes(city_slug: str, min_year: int = 2015) -> pd.DataFrame:
     return df
 
 
-def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    print("Engineering features...")
-    df = df.copy()
+def group_location(df: pd.DataFrame, train_mask: pd.Series, top_n: int = 30) -> pd.DataFrame:
+    """Group location_description: keep top N from TRAIN ONLY, others -> 'OTHER'.
 
+    Critical: top_n is computed from train rows only to avoid leakage.
+    """
+    df = df.copy()
+    df["location_description"] = df["location_description"].fillna("UNKNOWN").str.strip().str.upper()
+    df.loc[df["location_description"] == "", "location_description"] = "UNKNOWN"
+
+    train_top = df.loc[train_mask, "location_description"].value_counts().head(top_n).index.tolist()
+    print(f"  Top {top_n} locations (from train): keeping {len(train_top)} categories + OTHER")
+
+    df["location_group"] = df["location_description"].where(
+        df["location_description"].isin(train_top), other="OTHER"
+    )
+    return df
+
+
+def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+    print("Engineering temporal features...")
+    df = df.copy()
     df["hour"] = df["occurred_at"].dt.hour.astype("int8")
     df["day_of_week"] = df["occurred_at"].dt.dayofweek.astype("int8")
     df["month"] = df["occurred_at"].dt.month.astype("int8")
@@ -106,9 +122,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
             return 1
         return 2
     df["shift"] = df["hour"].apply(shift).astype("int8")
-
     df["beat_num"] = pd.to_numeric(df["beat"], errors="coerce").astype("Int32")
-
     df["arrest"] = df["arrest"].fillna(False).astype("int8")
     df["domestic"] = df["domestic"].fillna(False).astype("int8")
 
@@ -127,55 +141,48 @@ def temporal_split(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def quality_report(df: pd.DataFrame) -> None:
-    """Print a data quality report for the dataset. Confirms no leakage."""
     print("\n" + "=" * 60)
     print("DATA QUALITY REPORT")
     print("=" * 60)
 
-    # Split sizes
-    print("\nSplit sizes (no overlap, temporal partition):")
+    print("\nSplit sizes:")
     for split in ["train", "val", "test"]:
         sub = df[df["split"] == split]
-        year_min = sub["year"].min() if len(sub) else None
-        year_max = sub["year"].max() if len(sub) else None
-        print(f"  {split:<5} {len(sub):>10,} rows  years {year_min}-{year_max}")
+        yr_min, yr_max = (sub["year"].min(), sub["year"].max()) if len(sub) else (None, None)
+        print(f"  {split:<5} {len(sub):>10,} rows  years {yr_min}-{yr_max}")
 
-    # Leakage check
     train_years = set(df[df["split"] == "train"]["year"].unique())
     val_years = set(df[df["split"] == "val"]["year"].unique())
     test_years = set(df[df["split"] == "test"]["year"].unique())
-    overlap_tv = train_years & val_years
-    overlap_tt = train_years & test_years
-    overlap_vt = val_years & test_years
-    print(f"\nLeakage check (must all be empty):")
-    print(f"  train ∩ val:  {overlap_tv if overlap_tv else 'empty ✓'}")
-    print(f"  train ∩ test: {overlap_tt if overlap_tt else 'empty ✓'}")
-    print(f"  val   ∩ test: {overlap_vt if overlap_vt else 'empty ✓'}")
+    print(f"\nLeakage check:")
+    print(f"  train ∩ val:  {(train_years & val_years) or 'empty ✓'}")
+    print(f"  train ∩ test: {(train_years & test_years) or 'empty ✓'}")
+    print(f"  val   ∩ test: {(val_years & test_years) or 'empty ✓'}")
 
-    # Class balance for each target
-    print("\nTarget class balance (train split only):")
     train = df[df["split"] == "train"]
-
-    print("\n  primary_type (multiclass, top 10):")
+    print("\n  primary_type (train, top 10):")
     for ptype, n in train["primary_type"].value_counts().head(10).items():
         pct = n / len(train) * 100
         print(f"    {ptype:<35} {n:>10,}  ({pct:>5.2f}%)")
+    print(f"\n  arrest:   {train['arrest'].sum() / len(train) * 100:.2f}% positive")
+    print(f"  domestic: {train['domestic'].sum() / len(train) * 100:.2f}% positive")
 
-    print(f"\n  arrest (binary): {train['arrest'].sum() / len(train) * 100:.2f}% positive")
-    print(f"  domestic (binary): {train['domestic'].sum() / len(train) * 100:.2f}% positive")
+    print("\n  location_group distribution (train, top 15):")
+    for loc, n in train["location_group"].value_counts().head(15).items():
+        pct = n / len(train) * 100
+        print(f"    {loc:<40} {n:>10,}  ({pct:>5.2f}%)")
+    print(f"\n  Total location_groups: {train['location_group'].nunique()}")
 
-    # Missing rate per feature column
     feature_cols = ["hour", "day_of_week", "month", "is_weekend", "quarter",
                     "shift", "beat_num", "district", "community_area",
-                    "latitude", "longitude"]
-    print("\nFeature missing rate (full dataset):")
+                    "latitude", "longitude", "location_group"]
+    print("\nFeature missing rate:")
     for col in feature_cols:
         if col in df.columns:
             missing = df[col].isna().sum()
             pct = missing / len(df) * 100
             flag = "" if pct == 0 else f"  ⚠ {pct:.2f}%"
             print(f"  {col:<20} {missing:>8,} missing{flag}")
-
     print("=" * 60 + "\n")
 
 
@@ -183,6 +190,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--city", type=str, default="chicago")
     parser.add_argument("--min-year", type=int, default=2015)
+    parser.add_argument("--top-locations", type=int, default=30)
     parser.add_argument("--output", type=Path,
                         default=Path(__file__).parent / "features.parquet")
     args = parser.parse_args()
@@ -190,12 +198,15 @@ def main() -> None:
     df = fetch_crimes(args.city, args.min_year)
     df = engineer_features(df)
     df = temporal_split(df)
+
+    # Location grouping requires the split column to be set first (top-N from train only)
+    train_mask = df["split"] == "train"
+    df = group_location(df, train_mask, top_n=args.top_locations)
+
     quality_report(df)
 
-    # Cast district to string (Postgres can return Decimal/str mix), drop occurred_at
-    # before saving — we don't want it as a feature, and pyarrow doesn't like UUIDs/objects.
     df["district"] = df["district"].astype(str)
-    df = df.drop(columns=["occurred_at", "beat"])
+    df = df.drop(columns=["occurred_at", "beat", "location_description"])
 
     print(f"Saving to {args.output}...")
     df.to_parquet(args.output, index=False, compression="snappy")

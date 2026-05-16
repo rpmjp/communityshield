@@ -1,0 +1,29 @@
+{
+  "model": "property_binary_xgb_tuned",
+  "best_params": {
+    "max_depth": 11,
+    "learning_rate": 0.04767749042263092,
+    "min_child_weight": 8,
+    "subsample": 0.9401870386602086,
+    "colsample_bytree": 0.9841992619216573,
+    "reg_alpha": 0.001436613098481753,
+    "reg_lambda": 6.9833139267593625,
+    "gamma": 0.01782778657403039,
+    "n_estimators": 749
+  },
+  "n_estimators": 749,
+  "study_best_cv_auc": 0.7248211537334305,
+  "test": {
+    "split": "test",
+    "n_rows": 261301,
+    "accuracy": 0.6827451865855853,
+    "macro_f1": 0.6807831004530196,
+    "roc_auc": 0.7488996226581475,
+    "baseline_accuracy": 0.5428184354441812,
+    "lift_over_baseline_pp": 13.992675114140408
+  },
+  "tune_seconds": 2324.030512571335,
+  "n_trials": 100,
+  "n_completed_trials": 100,
+  "n_pruned_trials": 0
+}

@@ -18,3 +18,5 @@ seaborn==0.13.2
 
 # Notebook (optional but useful)
 jupyter==1.1.1sqlalchemy==2.0.36
+catboost==1.2.7
+optuna==4.1.0

@@ -1,0 +1,35 @@
+{
+  "model": "arrest_xgboost",
+  "train_seconds": 8.785552263259888,
+  "best_iteration": 379,
+  "train": {
+    "split": "train",
+    "n_rows": 2219554,
+    "accuracy": 0.8924225317338529,
+    "macro_f1": 0.7985655568835357,
+    "weighted_f1": 0.8864993383238289,
+    "roc_auc": 0.8928430473232006,
+    "baseline_accuracy": 0.8197610871373258,
+    "lift_over_baseline_pp": 7.266144459652713
+  },
+  "val": {
+    "split": "val",
+    "n_rows": 257549,
+    "accuracy": 0.8893880387809698,
+    "macro_f1": 0.74873203218167,
+    "weighted_f1": 0.8846886777675221,
+    "roc_auc": 0.857577373160305,
+    "baseline_accuracy": 0.861595269249735,
+    "lift_over_baseline_pp": 2.7792769531234884
+  },
+  "test": {
+    "split": "test",
+    "n_rows": 261301,
+    "accuracy": 0.8786992778443251,
+    "macro_f1": 0.7538384831427112,
+    "weighted_f1": 0.8732512654800614,
+    "roc_auc": 0.8594256095645617,
+    "baseline_accuracy": 0.8405631819242942,
+    "lift_over_baseline_pp": 3.8136095920030866
+  }
+}

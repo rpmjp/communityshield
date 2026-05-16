@@ -93,3 +93,5 @@ pgdata/
 *.tmp
 *.bak
 *.orig
+# ML model artifacts (too large for git, ~217MB)
+backend/app/ml/models/*.joblib

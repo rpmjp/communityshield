@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PredictionPanel from "./components/PredictionPanel";
 
 type Health = { status: string; database: string };
 
@@ -16,7 +17,7 @@ export default function App() {
 
   return (
     <div className="min-h-full bg-brand-900 text-brand-50 flex items-center justify-center px-6 py-12">
-      <div className="max-w-xl w-full text-center space-y-8">
+      <div className="max-w-2xl w-full space-y-8">
         <div className="flex items-center justify-center gap-3">
           <ShieldHeart className="w-12 h-12 text-accent-400" />
           <h1 className="text-4xl font-bold tracking-tight">CommunityShield</h1>
@@ -46,8 +47,10 @@ export default function App() {
           )}
         </div>
 
+        <PredictionPanel />
+
         <div className="text-xs text-brand-400">
-          Phase 0 foundation. Chicago seeded. Map coming next.
+          Phase 5 ML models live. Map and beat selection coming next.
         </div>
       </div>
     </div>

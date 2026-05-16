@@ -59,10 +59,13 @@ Thumbs.db
 data/raw/
 data/processed/
 data/external/
+data/geo/
 *.csv
 *.csv.gz
 *.parquet
 *.feather
+*.geojson
+*.geojson.gz
 
 # ---- ML artifacts ----
 ml/artifacts/*.joblib

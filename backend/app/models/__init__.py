@@ -2,3 +2,4 @@
 from app.models.city import City  # noqa: F401
 from app.models.crime import Crime  # noqa: F401
 from app.models.geography import CommunityArea, Beat  # noqa: F401
+from app.models.rollup import BeatRollup  # noqa: F401

@@ -17,8 +17,14 @@ export default class MapErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: { componentStack: string }) {
-    console.error("[MapErrorBoundary] Caught:", error, info);
+  componentDidCatch(error: Error) {
+    // Expected when WebGL is unavailable — Leaflet fallback handles it.
+    // Logged at info level so it doesn't appear as an error in the console.
+    if (!String(error.message).includes("WebGL")) {
+      console.error("[MapErrorBoundary] Unexpected error:", error);
+    } else {
+      console.info("[MapErrorBoundary] WebGL unavailable, using Leaflet fallback");
+    }
   }
 
   render() {

@@ -50,14 +50,23 @@ export default function App() {
       <div className="fixed inset-0 flex flex-col lg:flex-row bg-brand-900 text-brand-50">
         {/* Map area */}
         <div className="flex-1 relative min-h-0">
-          <MapErrorBoundary fallback={<MapFallback />}>
-            <CrimeMap
+          <MapErrorBoundary
+          fallback={
+            <MapFallback
               filters={filters}
               cities={cities}
               selectedBeat={selectedBeat}
               onSelectBeat={setSelectedBeat}
             />
-          </MapErrorBoundary>
+          }
+        >
+          <CrimeMap
+            filters={filters}
+            cities={cities}
+            selectedBeat={selectedBeat}
+            onSelectBeat={setSelectedBeat}
+          />
+        </MapErrorBoundary>
 
           {/* Top toolbar */}
           <div className="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 z-10

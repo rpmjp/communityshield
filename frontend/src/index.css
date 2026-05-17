@@ -51,3 +51,28 @@ body {
   color: #E8A04C;
   font-weight: 500;
 }
+
+/* Leaflet tooltip — match the MapLibre tooltip style */
+.cs-leaflet-tooltip {
+  background: rgba(20, 40, 36, 0.95) !important;
+  border: 1px solid rgba(46, 95, 79, 0.6) !important;
+  color: #e8f0ed !important;
+  border-radius: 6px !important;
+  padding: 0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+.cs-leaflet-tooltip::before {
+  border-top-color: rgba(20, 40, 36, 0.95) !important;
+}
+
+.leaflet-container {
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+.leaflet-control-attribution {
+  background: rgba(19, 42, 35, 0.85) !important;
+  color: #a4c3b6 !important;
+}
+.leaflet-control-attribution a {
+  color: #E8A04C !important;
+}

@@ -60,12 +60,15 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
     selectedBeatRef.current = selectedBeat;
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
-    // Re-paint to apply selection state
     if (map.getLayer("beats-fill")) {
       map.setPaintProperty("beats-fill", "fill-opacity", buildOpacityExpr(selectedBeat));
     }
+    if (map.getLayer("beats-selected-outline")) {
+      map.setFilter("beats-selected-outline", [
+        "==", ["get", "beat_number"], selectedBeat ?? "__none__",
+      ]);
+    }
   }, [selectedBeat]);
-
   // Initialize map once
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -109,9 +112,10 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
         if (!res.ok) throw new Error(`Beats fetch failed: ${res.status}`);
         const beatsGeoJson = await res.json();
 
-        // Remove old layers/source if any
-        if (map.getLayer("beats-fill")) map.removeLayer("beats-fill");
+        // Remove old layers/source if any (order matters: layers before source)
+        if (map.getLayer("beats-selected-outline")) map.removeLayer("beats-selected-outline");
         if (map.getLayer("beats-outline")) map.removeLayer("beats-outline");
+        if (map.getLayer("beats-fill")) map.removeLayer("beats-fill");
         if (map.getSource("beats")) map.removeSource("beats");
 
         map.addSource("beats", {
@@ -135,18 +139,23 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
           type: "line",
           source: "beats",
           paint: {
-            "line-color": [
-              "case",
-              ["==", ["get", "beat_number"], selectedBeatRef.current ?? ""], "#E8A04C",
-              "#E8A04C",
-            ],
-            "line-width": [
-              "case",
-              ["==", ["get", "beat_number"], selectedBeatRef.current ?? ""], 2.5,
-              0.5,
-            ],
-            "line-opacity": 0.7,
+            "line-color": "#E8A04C",
+            "line-width": 0.5,
+            "line-opacity": 0.6,
           },
+        });
+
+        // Separate layer for the selected beat outline (sits on top, thicker)
+        map.addLayer({
+          id: "beats-selected-outline",
+          type: "line",
+          source: "beats",
+          paint: {
+            "line-color": "#F4D03F",
+            "line-width": 3,
+            "line-opacity": 1,
+          },
+          filter: ["==", ["get", "beat_number"], selectedBeatRef.current ?? "__none__"],
         });
 
         // Click handler
@@ -157,7 +166,14 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
           if (beatNum) onSelectBeat(beatNum);
         });
 
-        // Hover state
+        // Hover state + tooltip
+        const popup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          className: "cs-tooltip",
+          offset: 8,
+        });
+
         let hoveredId: string | number | null = null;
         map.on("mousemove", "beats-fill", (e) => {
           if (!e.features || e.features.length === 0) return;
@@ -169,6 +185,23 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
             map.setFeatureState({ source: "beats", id: hoveredId }, { hover: true });
           }
           map.getCanvas().style.cursor = "pointer";
+
+          const f = e.features[0];
+          const beatNum = f.properties?.beat_number ?? "";
+          const district = f.properties?.district ?? "";
+          const state = map.getFeatureState({ source: "beats", id: beatNum });
+          const count = state?.count ?? 0;
+
+          popup
+            .setLngLat(e.lngLat)
+            .setHTML(
+              `<div class="cs-tooltip-inner">
+                 <div class="cs-tooltip-beat">Beat ${beatNum}</div>
+                 <div class="cs-tooltip-district">District ${district}</div>
+                 <div class="cs-tooltip-count">${Number(count).toLocaleString()} incidents</div>
+               </div>`
+            )
+            .addTo(map);
         });
         map.on("mouseleave", "beats-fill", () => {
           if (hoveredId !== null) {
@@ -176,6 +209,7 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
           }
           hoveredId = null;
           map.getCanvas().style.cursor = "";
+          popup.remove();
         });
 
         beatsLoadedFor.current = filters.city_slug;

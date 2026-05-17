@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { predictAll } from "../api/predict";
 import type { AllPredictionsResponse, PredictionFeatures } from "../api/types";
 
@@ -38,19 +38,26 @@ interface Props {
 }
 
 export default function PredictionPanel({ initial }: Props = {}) {
-  // Use initial values as the seed; component remounts on key change in App.
+  const panelRef = useRef<HTMLDivElement>(null);
   const [features, setFeatures] = useState<PredictionFeatures>(() =>
-    initial
-      ? { ...DEFAULT_FEATURES, ...initial }
-      : DEFAULT_FEATURES
+    initial ? { ...DEFAULT_FEATURES, ...initial } : DEFAULT_FEATURES
   );
   const [result, setResult] = useState<AllPredictionsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Scroll into view on remount when seeded from a beat selection
+  useEffect(() => {
+    if (!initial || !panelRef.current) return;
+    panelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const update = <K extends keyof PredictionFeatures>(
     key: K, value: PredictionFeatures[K]
-  ) => setFeatures(prev => ({ ...prev, [key]: value }));
+  ) => {
+    setFeatures(prev => ({ ...prev, [key]: value }));
+    setResult(null);
+  };
 
   const runPrediction = async () => {
     setLoading(true);
@@ -66,7 +73,8 @@ export default function PredictionPanel({ initial }: Props = {}) {
   };
 
   return (
-    <div className="border border-brand-700 rounded-lg p-6 bg-brand-800 text-left space-y-4">
+    <div ref={panelRef}
+         className="border border-brand-700 rounded-lg p-6 bg-brand-800 text-left space-y-4">
       <div className="text-sm uppercase tracking-wider text-brand-300">
         Beat Risk Prediction
       </div>
@@ -117,11 +125,17 @@ export default function PredictionPanel({ initial }: Props = {}) {
 
       <button onClick={runPrediction} disabled={loading}
         className="w-full bg-accent-400 text-brand-900 font-medium rounded px-4 py-2
-                   hover:bg-accent-300 disabled:opacity-50">
+                   hover:bg-accent-300 disabled:opacity-50 transition-colors">
         {loading ? "Predicting..." : "Run prediction"}
       </button>
 
       {error && <div className="text-red-300 text-sm">{error}</div>}
+
+      {!error && !result && !loading && (
+        <div className="text-xs text-brand-400 text-center py-2 italic">
+          Set features above and click "Run prediction" to see results.
+        </div>
+      )}
 
       {/* Results */}
       {result && (

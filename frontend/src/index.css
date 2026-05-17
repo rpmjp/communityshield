@@ -15,3 +15,39 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Map tooltip */
+.cs-tooltip .maplibregl-popup-content {
+  background: rgb(20 40 36 / 0.95);
+  border: 1px solid rgb(46 95 79 / 0.6);
+  color: #e8f0ed;
+  padding: 0;
+  border-radius: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+.cs-tooltip .maplibregl-popup-tip {
+  border-top-color: rgb(20 40 36 / 0.95);
+  border-bottom-color: rgb(20 40 36 / 0.95);
+}
+.cs-tooltip-inner {
+  padding: 6px 10px;
+  min-width: 120px;
+}
+.cs-tooltip-beat {
+  font-weight: 600;
+  font-size: 13px;
+  color: #ffffff;
+}
+.cs-tooltip-district {
+  font-size: 11px;
+  color: #a8c0b8;
+  margin-top: 1px;
+}
+.cs-tooltip-count {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #E8A04C;
+  font-weight: 500;
+}

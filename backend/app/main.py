@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import health, predict
+from app.api.v1 import beats, geo, health, heatmap, predict
 
 app = FastAPI(
     title="CommunityShield API",
@@ -25,6 +25,9 @@ app.add_middleware(
 # Routers
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(predict.router, prefix="/api/v1")
+app.include_router(heatmap.router, prefix="/api/v1")
+app.include_router(geo.router, prefix="/api/v1")
+app.include_router(beats.router, prefix="/api/v1")
 
 
 @app.get("/")

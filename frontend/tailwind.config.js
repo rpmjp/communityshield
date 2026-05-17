@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import typography from "@tailwindcss/typography";
+
 export default {
   content: [
     "./index.html",
@@ -8,7 +10,6 @@ export default {
     extend: {
       colors: {
         brand: {
-          // Deep forest-teal — civic, growth, prevention
           50:  "#EAF2EF",
           100: "#CFE0D9",
           200: "#A4C3B6",
@@ -22,7 +23,6 @@ export default {
           DEFAULT: "#2D5F4F",
         },
         accent: {
-          // Warm amber — community, warmth, action
           50:  "#FBF1E3",
           100: "#F6DFBE",
           200: "#F0C68A",
@@ -39,7 +39,44 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      typography: ({ theme }) => ({
+        cs: {
+          css: {
+            "--tw-prose-body": theme("colors.brand.100"),
+            "--tw-prose-headings": theme("colors.brand.50"),
+            "--tw-prose-lead": theme("colors.brand.200"),
+            "--tw-prose-links": theme("colors.accent.400"),
+            "--tw-prose-bold": theme("colors.brand.50"),
+            "--tw-prose-counters": theme("colors.brand.300"),
+            "--tw-prose-bullets": theme("colors.brand.500"),
+            "--tw-prose-hr": theme("colors.brand.700"),
+            "--tw-prose-quotes": theme("colors.brand.100"),
+            "--tw-prose-quote-borders": theme("colors.accent.500"),
+            "--tw-prose-captions": theme("colors.brand.300"),
+            "--tw-prose-code": theme("colors.accent.200"),
+            "--tw-prose-pre-code": theme("colors.brand.100"),
+            "--tw-prose-pre-bg": theme("colors.brand.800"),
+            "--tw-prose-th-borders": theme("colors.brand.600"),
+            "--tw-prose-td-borders": theme("colors.brand.700"),
+            "code::before": { content: "''" },
+            "code::after": { content: "''" },
+            code: {
+              backgroundColor: theme("colors.brand.800"),
+              padding: "0.15rem 0.4rem",
+              borderRadius: "0.25rem",
+              fontWeight: "400",
+            },
+            table: {
+              fontSize: "0.875rem",
+            },
+            "th, td": {
+              paddingTop: "0.5rem",
+              paddingBottom: "0.5rem",
+            },
+          },
+        },
+      }),
     },
   },
-  plugins: [],
+  plugins: [typography],
 };

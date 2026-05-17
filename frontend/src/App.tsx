@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import BeatDetailPanel from "./components/BeatDetailPanel";
 import CrimeMap from "./components/CrimeMap";
 import FilterBar from "./components/FilterBar";
@@ -75,6 +76,12 @@ export default function App() {
               )}
               {!error && !health && <span className="text-brand-300">...</span>}
             </div>
+            <Link
+              to="/methodology"
+              className="ml-2 pl-2 sm:ml-3 sm:pl-3 border-l border-brand-700 text-xs text-brand-300 hover:text-accent-400 flex-shrink-0"
+            >
+              Methodology
+            </Link>
           </div>
 
           <div className="flex-1 flex sm:justify-end overflow-x-auto">

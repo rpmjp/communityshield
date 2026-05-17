@@ -1,12 +1,17 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type { City, HeatmapFilters, HeatmapResponse } from "../types";
 
 const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-const CHICAGO_CENTER: [number, number] = [-87.6298, 41.8781];
-const INITIAL_ZOOM = 10;
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
+interface Props {
+  filters: HeatmapFilters;
+  cities: City[];
+  selectedBeat: string | null;
+  onSelectBeat: (beatNumber: string | null) => void;
+}
 
 function detectWebGL(): boolean {
   try {
@@ -21,15 +26,49 @@ function detectWebGL(): boolean {
   }
 }
 
+// Build the hour predicate for the heatmap query.
+// Backend expects hour_min/hour_max with min <= max; for "night" we'd need
+// hour_min=23, hour_max=6 which is wrap-around. The API doesn't handle wrap,
+// so for night we just send 0-6 as the dominant range (good-enough heuristic).
+function buildHeatmapQuery(filters: HeatmapFilters): string {
+  const params = new URLSearchParams({
+    city_slug: filters.city_slug,
+    year: String(filters.year),
+  });
+  if (filters.hour_min <= filters.hour_max) {
+    params.set("hour_min", String(filters.hour_min));
+    params.set("hour_max", String(filters.hour_max));
+  } else {
+    // Wrap-around (e.g., night 23-6): use 0-6 as the dominant slice
+    params.set("hour_min", "0");
+    params.set("hour_max", String(filters.hour_max));
+  }
+  if (filters.primary_type) {
+    params.set("primary_type", filters.primary_type);
+  }
+  return params.toString();
+}
 
-export default function CrimeMap() {
+export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }: Props) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const beatsLoadedFor = useRef<string | null>(null);
+  const selectedBeatRef = useRef<string | null>(null);
 
+  // Keep ref in sync (used inside map event handlers without re-binding)
+  useEffect(() => {
+    selectedBeatRef.current = selectedBeat;
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    // Re-paint to apply selection state
+    if (map.getLayer("beats-fill")) {
+      map.setPaintProperty("beats-fill", "fill-opacity", buildOpacityExpr(selectedBeat));
+    }
+  }, [selectedBeat]);
+
+  // Initialize map once
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
-
-    // Detect WebGL up front; let the error boundary handle the fallback
     if (!detectWebGL()) {
       throw new Error("WebGL is not available in this browser");
     }
@@ -37,28 +76,43 @@ export default function CrimeMap() {
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: MAP_STYLE,
-      center: CHICAGO_CENTER,
-      zoom: INITIAL_ZOOM,
+      center: [-87.6298, 41.8781],
+      zoom: 10,
       minZoom: 8,
       maxZoom: 16,
       attributionControl: { compact: true },
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-right");
-
-    // Catch async webgl context loss
-    map.on("error", (e) => {
-      console.error("[CrimeMap] Map error:", e.error);
-    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-left");
 
     mapRef.current = map;
 
-    map.on("load", async () => {
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Load beat polygons whenever city changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const loadBeats = async () => {
+      if (beatsLoadedFor.current === filters.city_slug) return;
+
       try {
-        const res = await fetch(`${API_BASE}/geo/beats`);
+        const res = await fetch(
+          `${API_BASE}/geo/beats?city_slug=${filters.city_slug}`
+        );
         if (!res.ok) throw new Error(`Beats fetch failed: ${res.status}`);
         const beatsGeoJson = await res.json();
+
+        // Remove old layers/source if any
+        if (map.getLayer("beats-fill")) map.removeLayer("beats-fill");
+        if (map.getLayer("beats-outline")) map.removeLayer("beats-outline");
+        if (map.getSource("beats")) map.removeSource("beats");
 
         map.addSource("beats", {
           type: "geojson",
@@ -72,11 +126,7 @@ export default function CrimeMap() {
           source: "beats",
           paint: {
             "fill-color": "#2D5F4F",
-            "fill-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false], 0.55,
-              0.25,
-            ],
+            "fill-opacity": buildOpacityExpr(selectedBeatRef.current),
           },
         });
 
@@ -85,12 +135,29 @@ export default function CrimeMap() {
           type: "line",
           source: "beats",
           paint: {
-            "line-color": "#E8A04C",
-            "line-width": 0.5,
-            "line-opacity": 0.6,
+            "line-color": [
+              "case",
+              ["==", ["get", "beat_number"], selectedBeatRef.current ?? ""], "#E8A04C",
+              "#E8A04C",
+            ],
+            "line-width": [
+              "case",
+              ["==", ["get", "beat_number"], selectedBeatRef.current ?? ""], 2.5,
+              0.5,
+            ],
+            "line-opacity": 0.7,
           },
         });
 
+        // Click handler
+        map.on("click", "beats-fill", (e) => {
+          const feature = e.features?.[0];
+          if (!feature) return;
+          const beatNum = feature.properties?.beat_number;
+          if (beatNum) onSelectBeat(beatNum);
+        });
+
+        // Hover state
         let hoveredId: string | number | null = null;
         map.on("mousemove", "beats-fill", (e) => {
           if (!e.features || e.features.length === 0) return;
@@ -103,7 +170,6 @@ export default function CrimeMap() {
           }
           map.getCanvas().style.cursor = "pointer";
         });
-
         map.on("mouseleave", "beats-fill", () => {
           if (hoveredId !== null) {
             map.setFeatureState({ source: "beats", id: hoveredId }, { hover: false });
@@ -112,17 +178,97 @@ export default function CrimeMap() {
           map.getCanvas().style.cursor = "";
         });
 
-        console.log(`[CrimeMap] Loaded ${beatsGeoJson.features.length} beats`);
+        beatsLoadedFor.current = filters.city_slug;
+        console.log(`[CrimeMap] Loaded ${beatsGeoJson.features.length} beats for ${filters.city_slug}`);
+
+        // Fly to city bounds
+        const city = cities.find((c) => c.slug === filters.city_slug);
+        if (city) {
+          map.fitBounds(
+            [
+              [city.bounds.min_lng, city.bounds.min_lat],
+              [city.bounds.max_lng, city.bounds.max_lat],
+            ],
+            { padding: 40, duration: 800 }
+          );
+        }
       } catch (err) {
         console.error("[CrimeMap] Failed to load beats:", err);
       }
-    });
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
     };
-  }, []);
+
+    if (map.isStyleLoaded()) {
+      loadBeats();
+    } else {
+      map.once("load", loadBeats);
+    }
+  }, [filters.city_slug, cities, onSelectBeat]);
+
+  // Load heatmap data whenever filters change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const loadHeatmap = async () => {
+      try {
+        const query = buildHeatmapQuery(filters);
+        const res = await fetch(`${API_BASE}/heatmap?${query}`);
+        if (!res.ok) throw new Error(`Heatmap fetch failed: ${res.status}`);
+        const data: HeatmapResponse = await res.json();
+
+        // Build a map of beat_number -> incident count
+        const counts: Record<string, number> = {};
+        data.beats.forEach((b) => {
+          counts[b.beat_number] = b.incident_count;
+        });
+        const maxCount = data.max_beat_incidents || 1;
+
+        // Update each feature's state with its count
+        const source = map.getSource("beats");
+        if (!source) return;
+
+        // Style fill-color by count via a data-driven expression
+        if (map.getLayer("beats-fill")) {
+          map.setPaintProperty("beats-fill", "fill-color", [
+            "interpolate",
+            ["linear"],
+            ["coalesce", ["feature-state", "count"], 0],
+            0, "#1a3d33",
+            maxCount * 0.25, "#2D5F4F",
+            maxCount * 0.5, "#7a4e1f",
+            maxCount * 0.75, "#c97a2e",
+            maxCount, "#E8A04C",
+          ]);
+        }
+
+        // Set count as feature-state per beat
+        type GeoFeature = { properties?: { beat_number?: string } };
+        const geoJsonSource = source as maplibregl.GeoJSONSource & { _data?: { features?: GeoFeature[] } };
+        const dataInternal = geoJsonSource._data;
+        if (dataInternal?.features) {
+          dataInternal.features.forEach((f: GeoFeature) => {
+            const beatNum = f.properties?.beat_number;
+            if (!beatNum) return;
+            const count = counts[beatNum] ?? 0;
+            map.setFeatureState(
+              { source: "beats", id: beatNum },
+              { count }
+            );
+          });
+        }
+
+        console.log(`[CrimeMap] Heatmap updated: ${data.beats.length} beats, max ${maxCount}`);
+      } catch (err) {
+        console.error("[CrimeMap] Failed to load heatmap:", err);
+      }
+    };
+
+    if (map.isStyleLoaded() && beatsLoadedFor.current === filters.city_slug) {
+      loadHeatmap();
+    } else {
+      map.once("load", loadHeatmap);
+    }
+  }, [filters]);
 
   return (
     <div
@@ -130,4 +276,14 @@ export default function CrimeMap() {
       style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
     />
   );
+}
+
+// Helper: opacity expression that highlights the selected beat
+function buildOpacityExpr(selectedBeat: string | null): maplibregl.ExpressionSpecification {
+  return [
+    "case",
+    ["==", ["get", "beat_number"], selectedBeat ?? ""], 0.75,
+    ["boolean", ["feature-state", "hover"], false], 0.65,
+    0.45,
+  ];
 }

@@ -2,6 +2,14 @@ import { useState } from "react";
 import { predictAll } from "../api/predict";
 import type { AllPredictionsResponse, PredictionFeatures } from "../api/types";
 
+export interface PredictionPanelInitial {
+  beat_num: number;
+  district: string;
+  latitude: number;
+  longitude: number;
+  primary_type: string;
+}
+
 const DEFAULT_FEATURES: PredictionFeatures = {
   hour: 22,
   day_of_week: 5,
@@ -25,8 +33,17 @@ const LOCATION_GROUPS = [
   "SMALL RETAIL STORE", "RESTAURANT", "ALLEY", "PARKING LOT/GARAGE(NON.RESID.)",
 ];
 
-export default function PredictionPanel() {
-  const [features, setFeatures] = useState<PredictionFeatures>(DEFAULT_FEATURES);
+interface Props {
+  initial?: PredictionPanelInitial | null;
+}
+
+export default function PredictionPanel({ initial }: Props = {}) {
+  // Use initial values as the seed; component remounts on key change in App.
+  const [features, setFeatures] = useState<PredictionFeatures>(() =>
+    initial
+      ? { ...DEFAULT_FEATURES, ...initial }
+      : DEFAULT_FEATURES
+  );
   const [result, setResult] = useState<AllPredictionsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

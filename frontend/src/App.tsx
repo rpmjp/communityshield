@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import CrimeMap from "./components/CrimeMap";
+import MapErrorBoundary from "./components/MapErrorBoundary";
+import MapFallback from "./components/MapFallback";
 import PredictionPanel from "./components/PredictionPanel";
 
 type Health = { status: string; database: string };
@@ -16,41 +19,37 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-full bg-brand-900 text-brand-50 flex items-center justify-center px-6 py-12">
-      <div className="max-w-2xl w-full space-y-8">
-        <div className="flex items-center justify-center gap-3">
-          <ShieldHeart className="w-12 h-12 text-accent-400" />
-          <h1 className="text-4xl font-bold tracking-tight">CommunityShield</h1>
-        </div>
+    <div className="fixed inset-0 flex bg-brand-900 text-brand-50">
+      {/* Map area */}
+      <div className="flex-1 relative">
+        <MapErrorBoundary fallback={<MapFallback />}>
+          <CrimeMap />
+        </MapErrorBoundary>
 
-        <p className="text-brand-200 text-lg leading-relaxed">
-          Community-led public safety. Local crime patterns. Evidence-based prevention.
-        </p>
-
-        <div className="border border-brand-700 rounded-lg p-6 bg-brand-800 text-left">
-          <div className="text-sm uppercase tracking-wider text-brand-300 mb-2">
-            Backend status
+        {/* Floating header */}
+        <div className="absolute top-4 left-4 z-10 flex items-center gap-3 bg-brand-800/90 backdrop-blur-sm
+                        border border-brand-700 rounded-lg px-4 py-2.5 shadow-xl">
+          <ShieldHeart className="w-6 h-6 text-accent-400" />
+          <div>
+            <div className="font-bold text-lg leading-tight">CommunityShield</div>
+            <div className="text-xs text-brand-300">Chicago · Community-led safety</div>
           </div>
-          {error && <div className="text-red-300">Backend not reachable: {error}</div>}
-          {!error && !health && <div className="text-brand-300">Checking...</div>}
-          {health && (
-            <div className="space-y-1">
-              <div>
-                <span className="text-brand-300">API:</span>{" "}
-                <span className="text-accent-400 font-medium">{health.status}</span>
-              </div>
-              <div>
-                <span className="text-brand-300">Database:</span>{" "}
-                <span className="text-accent-400 font-medium">{health.database}</span>
-              </div>
-            </div>
-          )}
+          <div className="ml-3 pl-3 border-l border-brand-700 text-xs">
+            {error && <span className="text-red-300">offline</span>}
+            {!error && health && (
+              <span className="text-accent-400">
+                ● {health.status === "ok" ? "live" : health.status}
+              </span>
+            )}
+            {!error && !health && <span className="text-brand-300">connecting...</span>}
+          </div>
         </div>
+      </div>
 
-        <PredictionPanel />
-
-        <div className="text-xs text-brand-400">
-          Phase 5 ML models live. Map and beat selection coming next.
+      {/* Side panel */}
+      <div className="w-[28rem] border-l border-brand-700 overflow-y-auto">
+        <div className="p-4 space-y-4">
+          <PredictionPanel />
         </div>
       </div>
     </div>

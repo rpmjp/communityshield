@@ -13,12 +13,26 @@ export interface PredictionFeatures {
   primary_type?: string;   // required for arrest/domestic
 }
 
+export interface FeatureContribution {
+  feature: string;
+  label: string;
+  value: number;
+  shap: number;
+}
+
+export interface PredictionExplanation {
+  base_value: number;
+  prediction_value: number;
+  contributions: FeatureContribution[];
+}
+
 export interface BinaryPrediction {
   model: string;
   probability: number;
   prediction: number; // 0 or 1
   threshold: number;
   label?: string | null;
+  explanation?: PredictionExplanation | null;
 }
 
 export interface CrimeTypePrediction {

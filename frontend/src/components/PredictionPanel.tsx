@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { predictAll } from "../api/predict";
 import type { AllPredictionsResponse, PredictionFeatures } from "../api/types";
+import ExplanationPanel from "./ExplanationPanel";
 
 export interface PredictionPanelInitial {
   beat_num: number;
@@ -140,15 +141,30 @@ export default function PredictionPanel({ initial }: Props = {}) {
       {/* Results */}
       {result && (
         <div className="space-y-3 pt-2 border-t border-brand-700">
-          <Metric label="Arrest probability"
-            value={result.arrest.probability}
-            highlight={result.arrest.prediction === 1} />
-          <Metric label="Domestic probability"
-            value={result.domestic.probability}
-            highlight={result.domestic.prediction === 1} />
-          <Metric label="Property crime probability"
-            value={result.property_binary.probability}
-            highlight={result.property_binary.prediction === 1} />
+          <div className="space-y-1">
+            <Metric label="Arrest probability"
+              value={result.arrest.probability}
+              highlight={result.arrest.prediction === 1} />
+            {result.arrest.explanation && (
+              <ExplanationPanel title="Arrest" explanation={result.arrest.explanation} />
+            )}
+          </div>
+          <div className="space-y-1">
+            <Metric label="Domestic probability"
+              value={result.domestic.probability}
+              highlight={result.domestic.prediction === 1} />
+            {result.domestic.explanation && (
+              <ExplanationPanel title="Domestic" explanation={result.domestic.explanation} />
+            )}
+          </div>
+          <div className="space-y-1">
+            <Metric label="Property crime probability"
+              value={result.property_binary.probability}
+              highlight={result.property_binary.prediction === 1} />
+            {result.property_binary.explanation && (
+              <ExplanationPanel title="Property" explanation={result.property_binary.explanation} />
+            )}
+          </div>
 
           <div className="pt-2">
             <div className="text-brand-300 text-xs uppercase tracking-wider mb-2">

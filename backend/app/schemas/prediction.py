@@ -20,12 +20,26 @@ class PredictionFeatures(BaseModel):
     primary_type: Optional[str] = Field(None, description="Crime type, required for arrest/domestic")
 
 
+class FeatureContribution(BaseModel):
+    feature: str
+    label: str
+    value: float
+    shap: float
+
+
+class PredictionExplanation(BaseModel):
+    base_value: float
+    prediction_value: float
+    contributions: list[FeatureContribution]
+
+
 class BinaryPrediction(BaseModel):
     model: str
     probability: float
     prediction: int
     threshold: float
     label: Optional[str] = None
+    explanation: Optional[PredictionExplanation] = None
 
 
 class CrimeTypePrediction(BaseModel):

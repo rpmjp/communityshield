@@ -6,9 +6,12 @@ from fastapi import APIRouter, Query
 from app.ml.loader import get_models
 from app.ml.predictor import (
     predict_arrest,
+    predict_arrest_with_explanation,
     predict_crime_type,
     predict_domestic,
+    predict_domestic_with_explanation,
     predict_property_binary,
+    predict_property_with_explanation,
 )
 from app.schemas.prediction import (
     AllPredictionsResponse,
@@ -58,10 +61,24 @@ def crime_type_endpoint(
 
 
 @router.post("/all", response_model=AllPredictionsResponse)
-def all_endpoint(features: PredictionFeatures):
-    """Run all four models and return unified response."""
+def all_endpoint(
+    features: PredictionFeatures,
+    explain: bool = Query(False, description="Include SHAP explanations"),
+):
+    """Run all four models and return unified response.
+
+    When explain=true, includes SHAP per-feature contributions for the three
+    binary models. Adds ~50-150ms latency.
+    """
     f = features.model_dump()
     m = get_models()
+    if explain:
+        return {
+            "arrest": predict_arrest_with_explanation(f, m["arrest"]),
+            "domestic": predict_domestic_with_explanation(f, m["domestic"]),
+            "property_binary": predict_property_with_explanation(f, m["property_binary"]),
+            "crime_type": predict_crime_type(f, m["hierarchical"], top_k=5),
+        }
     return {
         "arrest": predict_arrest(f, m["arrest"]),
         "domestic": predict_domestic(f, m["domestic"]),

@@ -10,6 +10,8 @@ from typing import Any
 import numpy as np
 import xgboost as xgb
 
+from app.ml.explainer import explain_binary_prediction
+
 
 # Feature columns that go into every model
 BASE_FEATURE_COLS = [
@@ -145,4 +147,58 @@ def predict_crime_type(features: dict, bundle: dict[str, Any],
         "supercategory_probabilities": {
             cls: float(top_proba[i]) for i, cls in enumerate(top_classes)
         },
+    }
+
+def predict_arrest_with_explanation(features: dict, bundle: dict[str, Any],
+                                     threshold: float = 0.5,
+                                     top_features: int = 5) -> dict:
+    row = _build_feature_row(features)
+    X = _encode_row(row, bundle["district_map"], bundle["location_map"],
+                    bundle["type_map"])
+    proba = float(bundle["model"].predict(xgb.DMatrix(X))[0])
+    explanation = explain_binary_prediction(bundle["model"], X, bundle["feature_cols"])
+    explanation["contributions"] = explanation["contributions"][:top_features]
+    return {
+        "model": "arrest",
+        "probability": proba,
+        "prediction": int(proba > threshold),
+        "threshold": threshold,
+        "explanation": explanation,
+    }
+
+
+def predict_domestic_with_explanation(features: dict, bundle: dict[str, Any],
+                                       threshold: float = 0.5,
+                                       top_features: int = 5) -> dict:
+    row = _build_feature_row(features)
+    X = _encode_row(row, bundle["district_map"], bundle["location_map"],
+                    bundle["type_map"])
+    proba = float(bundle["model"].predict(xgb.DMatrix(X))[0])
+    explanation = explain_binary_prediction(bundle["model"], X, bundle["feature_cols"])
+    explanation["contributions"] = explanation["contributions"][:top_features]
+    return {
+        "model": "domestic",
+        "probability": proba,
+        "prediction": int(proba > threshold),
+        "threshold": threshold,
+        "explanation": explanation,
+    }
+
+
+def predict_property_with_explanation(features: dict, bundle: dict[str, Any],
+                                       threshold: float = 0.5,
+                                       top_features: int = 5) -> dict:
+    row = _build_feature_row(features)
+    X = _encode_row(row, bundle["district_map"], bundle["location_map"],
+                    type_map=None)
+    proba = float(bundle["model"].predict(xgb.DMatrix(X))[0])
+    explanation = explain_binary_prediction(bundle["model"], X, bundle["feature_cols"])
+    explanation["contributions"] = explanation["contributions"][:top_features]
+    return {
+        "model": "property_binary",
+        "probability": proba,
+        "prediction": int(proba > threshold),
+        "threshold": threshold,
+        "label": "property" if proba > threshold else "not_property",
+        "explanation": explanation,
     }

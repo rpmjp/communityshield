@@ -23,35 +23,31 @@ interface Props {
 
 export default function RocCurveChart({ data, auc, title, color = "#E8A04C" }: Props) {
   return (
-    <div className="bg-brand-800 border border-brand-700 rounded-lg p-4">
-      <div className="flex items-baseline justify-between mb-3">
-        <h4 className="text-sm font-semibold text-brand-100">{title}</h4>
-        <span className="text-xs text-brand-300">
+    <div className="bg-brand-800 border border-brand-700 rounded-lg p-3 sm:p-4 min-w-0">
+      <div className="flex flex-wrap items-baseline justify-between gap-1 mb-3">
+        <h4 className="text-sm font-semibold text-brand-100 truncate">{title}</h4>
+        <span className="text-[11px] sm:text-xs text-brand-300">
           AUC <span className="text-accent-400 font-mono font-semibold">{auc.toFixed(3)}</span>
         </span>
       </div>
-      <div className="h-56">
+      <div className="h-48 sm:h-56">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: 6, left: -28, bottom: 0 }}>
             <CartesianGrid stroke="#244D40" strokeDasharray="2 4" />
             <XAxis
               type="number"
               dataKey="fpr"
               domain={[0, 1]}
-              ticks={[0, 0.25, 0.5, 0.75, 1]}
-              tick={{ fill: "#76A593", fontSize: 11 }}
+              ticks={[0, 0.5, 1]}
+              tick={{ fill: "#76A593", fontSize: 10 }}
               stroke="#1B3B31"
-              label={{ value: "False positive rate", position: "insideBottom", offset: -2,
-                       fill: "#76A593", fontSize: 11 }}
             />
             <YAxis
               type="number"
               domain={[0, 1]}
-              ticks={[0, 0.25, 0.5, 0.75, 1]}
-              tick={{ fill: "#76A593", fontSize: 11 }}
+              ticks={[0, 0.5, 1]}
+              tick={{ fill: "#76A593", fontSize: 10 }}
               stroke="#1B3B31"
-              label={{ value: "True positive rate", angle: -90, position: "insideLeft",
-                       fill: "#76A593", fontSize: 11, offset: 15 }}
             />
             <Tooltip
               contentStyle={{
@@ -75,6 +71,10 @@ export default function RocCurveChart({ data, auc, title, color = "#E8A04C" }: P
             />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] uppercase tracking-wider text-brand-400 sm:text-[11px]">
+        <span>False positive rate</span>
+        <span className="text-right">True positive rate</span>
       </div>
     </div>
   );

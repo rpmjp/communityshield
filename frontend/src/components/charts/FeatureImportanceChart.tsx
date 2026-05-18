@@ -37,20 +37,25 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 export default function FeatureImportanceChart({ data, title, color = "#E8A04C" }: Props) {
-  const labeled = data.map((d) => ({
+  const labeled = data.slice(0, 8).map((d) => ({
     ...d,
     label: FEATURE_LABELS[d.feature] ?? d.feature,
+    shortLabel: (FEATURE_LABELS[d.feature] ?? d.feature)
+      .replace("Community area", "Community")
+      .replace("Police district", "District")
+      .replace("Location type", "Location")
+      .replace("Crime type", "Type"),
   }));
 
   return (
-    <div className="bg-brand-800 border border-brand-700 rounded-lg p-4">
-      <h4 className="text-sm font-semibold text-brand-100 mb-3">{title}</h4>
-      <div className="h-64">
+    <div className="bg-brand-800 border border-brand-700 rounded-lg p-3 sm:p-4 min-w-0">
+      <h4 className="text-sm font-semibold text-brand-100 mb-3 truncate">{title}</h4>
+      <div className="h-56 sm:h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={labeled}
             layout="vertical"
-            margin={{ top: 5, right: 20, left: 90, bottom: 5 }}
+            margin={{ top: 5, right: 8, left: 64, bottom: 5 }}
           >
             <CartesianGrid stroke="#244D40" strokeDasharray="2 4" horizontal={false} />
             <XAxis
@@ -60,10 +65,10 @@ export default function FeatureImportanceChart({ data, title, color = "#E8A04C" 
             />
             <YAxis
               type="category"
-              dataKey="label"
-              tick={{ fill: "#A4C3B6", fontSize: 11 }}
+              dataKey="shortLabel"
+              tick={{ fill: "#A4C3B6", fontSize: 10 }}
               stroke="#1B3B31"
-              width={90}
+              width={68}
               interval={0}
             />
             <Tooltip
@@ -78,8 +83,8 @@ export default function FeatureImportanceChart({ data, title, color = "#E8A04C" 
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="text-xs text-brand-400 mt-2 italic">
-        XGBoost gain — total gain across splits using this feature
+      <div className="text-[11px] sm:text-xs text-brand-400 mt-2 leading-relaxed">
+        XGBoost gain across splits. Showing top 8 features for readability.
       </div>
     </div>
   );

@@ -132,8 +132,8 @@ export default function Methodology() {
 
   return (
     <div className="min-h-screen bg-brand-900 text-brand-50">
-      <div className="sticky top-0 z-20 border-b border-brand-700 bg-brand-800/90 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-20 border-b border-brand-700 bg-brand-800/90 backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity rounded focus:outline-none focus:ring-2 focus:ring-accent-400">
             <ShieldHeart className="w-6 h-6 text-accent-400" />
             <div>
@@ -147,7 +147,7 @@ export default function Methodology() {
         </div>
       </div>
 
-      <article className="max-w-4xl mx-auto px-6 py-12 space-y-8">
+      <article className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard label="Rows ingested" value="8.5M" />
           <MetricCard label="Police beats" value="274" />
@@ -200,7 +200,7 @@ export default function Methodology() {
             Area under the curve (AUC) is a threshold-independent measure of how well
             the model separates classes.
           </p>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-4 lg:grid-cols-2">
             <RocCurveChart
               title="Arrest"
               data={arrest.roc}
@@ -230,7 +230,7 @@ export default function Methodology() {
             feature, summed across the boosted ensemble. Higher means the model relies on
             that feature more.
           </p>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-4 lg:grid-cols-2">
             <FeatureImportanceChart
               title="Arrest model"
               data={arrest.feature_importance}

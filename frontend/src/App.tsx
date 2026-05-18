@@ -158,8 +158,17 @@ export default function App() {
           </div>
 
           <div className="p-4 space-y-4">
+            <section className="border border-brand-700 rounded-lg bg-brand-800 px-4 py-3">
+              <div className="text-xs uppercase tracking-wider text-brand-300">
+                Planning context
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-brand-300">
+                Use the map and model outputs to spot patterns for prevention, services, and resource planning. Treat every estimate as context that needs local review.
+              </p>
+            </section>
             {selectedBeat && (
               <BeatDetailPanel
+                key={`${filters.city_slug}-${selectedBeat}-${filters.year}`}
                 citySlug={filters.city_slug}
                 beatNumber={selectedBeat}
                 year={filters.year}

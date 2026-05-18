@@ -36,12 +36,12 @@ function TableFallback() {
             Map view unavailable
           </div>
           <div className="text-sm text-amber-100/80">
-            Both the interactive map renderers failed to load. The data is shown
-            below as a sortable table instead.
+            Both interactive map renderers failed to load. The filters and prediction panel
+            are still available, but beat selection needs a browser with map rendering support.
           </div>
         </div>
         <p className="text-brand-300 text-sm">
-          (Reduced view — please try another browser or check console.)
+          Reduced view. Try another browser, enable hardware acceleration, or check the console.
         </p>
       </div>
     </div>

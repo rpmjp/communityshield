@@ -22,7 +22,7 @@ describe("PredictionPanel", () => {
 
   it("shows empty state before running prediction", () => {
     render(<PredictionPanel />);
-    expect(screen.getByText(/Set features above/i)).toBeInTheDocument();
+    expect(screen.getByText(/Set the visible model features/i)).toBeInTheDocument();
   });
 
   it("seeds form from initial prop", () => {
@@ -88,6 +88,17 @@ describe("PredictionPanel", () => {
 
     // Stale result should be cleared
     expect(screen.queryByText(/42.0%/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Set features above/i)).toBeInTheDocument();
+    expect(screen.getByText(/Set the visible model features/i)).toBeInTheDocument();
+  });
+
+  it("validates feature inputs before calling the API", () => {
+    render(<PredictionPanel />);
+    const hourInput = screen.getByDisplayValue("22");
+    fireEvent.change(hourInput, { target: { value: "30" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Run prediction/i }));
+
+    expect(screen.getByText(/Hour must be a whole number/i)).toBeInTheDocument();
+    expect(predictAll).not.toHaveBeenCalled();
   });
 });

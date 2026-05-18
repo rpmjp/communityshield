@@ -19,17 +19,44 @@ const HOUR_PRESETS: { label: string; min: number; max: number }[] = [
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 
 export default function FilterBar({ filters, cities, onChange }: Props) {
-  const [crimeTypes, setCrimeTypes] = useState<CrimeTypeOption[]>([]);
+  const [crimeTypesState, setCrimeTypesState] = useState<{
+    citySlug: string;
+    status: "loading" | "ready" | "error";
+    items: CrimeTypeOption[];
+  }>({ citySlug: filters.city_slug, status: "loading", items: [] });
 
   useEffect(() => {
+    let cancelled = false;
     fetch(`${API_BASE}/heatmap/crime_types?city_slug=${filters.city_slug}`)
       .then((r) => r.json())
-      .then(setCrimeTypes)
-      .catch(() => setCrimeTypes([]));
+      .then((data) => {
+        if (cancelled) return;
+        setCrimeTypesState({
+          citySlug: filters.city_slug,
+          status: "ready",
+          items: data,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCrimeTypesState({
+          citySlug: filters.city_slug,
+          status: "error",
+          items: [],
+        });
+      });
+    return () => { cancelled = true; };
   }, [filters.city_slug]);
 
   const presetActive = (min: number, max: number) =>
     filters.hour_min === min && filters.hour_max === max;
+  const crimeTypesLoading = crimeTypesState.citySlug !== filters.city_slug
+    || crimeTypesState.status === "loading";
+  const crimeTypesError = crimeTypesState.citySlug === filters.city_slug
+    && crimeTypesState.status === "error";
+  const crimeTypes = crimeTypesState.citySlug === filters.city_slug
+    ? crimeTypesState.items
+    : [];
 
   return (
     <div className="bg-brand-800/95 backdrop-blur-sm border border-brand-700 rounded-lg
@@ -43,6 +70,7 @@ export default function FilterBar({ filters, cities, onChange }: Props) {
           className="bg-brand-900 border border-brand-700 rounded px-2 py-1"
           disabled={cities.length <= 1}
         >
+          {cities.length === 0 && <option value={filters.city_slug}>Loading cities</option>}
           {cities.map((c) => (
             <option key={c.slug} value={c.slug}>{c.name}</option>
           ))}
@@ -72,8 +100,11 @@ export default function FilterBar({ filters, cities, onChange }: Props) {
             onChange({ ...filters, primary_type: e.target.value || null })
           }
           className="bg-brand-900 border border-brand-700 rounded px-2 py-1 max-w-[12rem]"
+          disabled={crimeTypesLoading || crimeTypesError}
         >
-          <option value="">All types</option>
+          <option value="">
+            {crimeTypesLoading ? "Loading types" : crimeTypesError ? "Types unavailable" : "All types"}
+          </option>
           {crimeTypes.map((t) => (
             <option key={t.primary_type} value={t.primary_type}>
               {t.primary_type}

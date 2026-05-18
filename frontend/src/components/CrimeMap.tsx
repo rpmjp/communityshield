@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { City, HeatmapFilters, HeatmapResponse } from "../types";
@@ -26,23 +26,13 @@ function detectWebGL(): boolean {
   }
 }
 
-// Build the hour predicate for the heatmap query.
-// Backend expects hour_min/hour_max with min <= max; for "night" we'd need
-// hour_min=23, hour_max=6 which is wrap-around. The API doesn't handle wrap,
-// so for night we just send 0-6 as the dominant range (good-enough heuristic).
 function buildHeatmapQuery(filters: HeatmapFilters): string {
   const params = new URLSearchParams({
     city_slug: filters.city_slug,
     year: String(filters.year),
+    hour_min: String(filters.hour_min),
+    hour_max: String(filters.hour_max),
   });
-  if (filters.hour_min <= filters.hour_max) {
-    params.set("hour_min", String(filters.hour_min));
-    params.set("hour_max", String(filters.hour_max));
-  } else {
-    // Wrap-around (e.g., night 23-6): use 0-6 as the dominant slice
-    params.set("hour_min", "0");
-    params.set("hour_max", String(filters.hour_max));
-  }
   if (filters.primary_type) {
     params.set("primary_type", filters.primary_type);
   }
@@ -53,7 +43,14 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const beatsLoadedFor = useRef<string | null>(null);
+  const beatNumbersRef = useRef<string[]>([]);
   const selectedBeatRef = useRef<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [beatsReadyCity, setBeatsReadyCity] = useState<string | null>(null);
+  const [heatmapStatus, setHeatmapStatus] = useState<{
+    state: "idle" | "loading" | "empty" | "error" | "ready";
+    message?: string;
+  }>({ state: "idle" });
 
   // Keep ref in sync (used inside map event handlers without re-binding)
   useEffect(() => {
@@ -90,20 +87,25 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
     map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-left");
 
     mapRef.current = map;
+    map.once("load", () => setMapReady(true));
 
     return () => {
       map.remove();
       mapRef.current = null;
+      setMapReady(false);
     };
   }, []);
 
   // Load beat polygons whenever city changes
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
 
     const loadBeats = async () => {
-      if (beatsLoadedFor.current === filters.city_slug) return;
+      if (beatsLoadedFor.current === filters.city_slug) {
+        setBeatsReadyCity(filters.city_slug);
+        return;
+      }
 
       try {
         const res = await fetch(
@@ -111,6 +113,9 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
         );
         if (!res.ok) throw new Error(`Beats fetch failed: ${res.status}`);
         const beatsGeoJson = await res.json();
+        beatNumbersRef.current = beatsGeoJson.features
+          .map((feature: { properties?: { beat_number?: string } }) => feature.properties?.beat_number)
+          .filter((beatNumber: string | undefined): beatNumber is string => Boolean(beatNumber));
 
         // Remove old layers/source if any (order matters: layers before source)
         if (map.getLayer("beats-selected-outline")) map.removeLayer("beats-selected-outline");
@@ -213,6 +218,7 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
         });
 
         beatsLoadedFor.current = filters.city_slug;
+        setBeatsReadyCity(filters.city_slug);
         console.log(`[CrimeMap] Loaded ${beatsGeoJson.features.length} beats for ${filters.city_slug}`);
 
         // Fly to city bounds
@@ -228,22 +234,26 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
         }
       } catch (err) {
         console.error("[CrimeMap] Failed to load beats:", err);
+        setHeatmapStatus({
+          state: "error",
+          message: "Beat boundaries could not be loaded for the selected city.",
+        });
       }
     };
 
-    if (map.isStyleLoaded()) {
-      loadBeats();
-    } else {
-      map.once("load", loadBeats);
-    }
-  }, [filters.city_slug, cities, onSelectBeat]);
+    loadBeats();
+  }, [filters.city_slug, cities, onSelectBeat, mapReady]);
 
   // Load heatmap data whenever filters change
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
+    if (beatsReadyCity !== filters.city_slug || beatsLoadedFor.current !== filters.city_slug) {
+      return;
+    }
 
     const loadHeatmap = async () => {
+      setHeatmapStatus({ state: "loading", message: "Loading incident counts..." });
       try {
         const query = buildHeatmapQuery(filters);
         const res = await fetch(`${API_BASE}/heatmap?${query}`);
@@ -256,6 +266,15 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
           counts[b.beat_number] = b.incident_count;
         });
         const maxCount = data.max_beat_incidents || 1;
+        setHeatmapStatus(data.beats.length === 0
+          ? {
+              state: "empty",
+              message: "No incidents match the selected filters. Try another year, time, or type.",
+            }
+          : {
+              state: "ready",
+              message: `${data.total_incidents.toLocaleString()} incidents match the selected filters.`,
+            });
 
         // Update each feature's state with its count
         const source = map.getSource("beats");
@@ -275,40 +294,50 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
           ]);
         }
 
-        // Set count as feature-state per beat
-        type GeoFeature = { properties?: { beat_number?: string } };
-        const geoJsonSource = source as maplibregl.GeoJSONSource & { _data?: { features?: GeoFeature[] } };
-        const dataInternal = geoJsonSource._data;
-        if (dataInternal?.features) {
-          dataInternal.features.forEach((f: GeoFeature) => {
-            const beatNum = f.properties?.beat_number;
-            if (!beatNum) return;
-            const count = counts[beatNum] ?? 0;
-            map.setFeatureState(
-              { source: "beats", id: beatNum },
-              { count }
-            );
-          });
-        }
+        beatNumbersRef.current.forEach((beatNum) => {
+          const count = counts[beatNum] ?? 0;
+          map.setFeatureState(
+            { source: "beats", id: beatNum },
+            { count }
+          );
+        });
 
         console.log(`[CrimeMap] Heatmap updated: ${data.beats.length} beats, max ${maxCount}`);
       } catch (err) {
         console.error("[CrimeMap] Failed to load heatmap:", err);
+        setHeatmapStatus({
+          state: "error",
+          message: "Incident counts could not be loaded. The map boundaries may still be selectable.",
+        });
       }
     };
 
-    if (map.isStyleLoaded() && beatsLoadedFor.current === filters.city_slug) {
-      loadHeatmap();
-    } else {
-      map.once("load", loadHeatmap);
-    }
-  }, [filters]);
+    loadHeatmap();
+  }, [filters, beatsReadyCity, mapReady]);
+
+  const visibleStatus = !mapReady || beatsReadyCity !== filters.city_slug
+    ? { state: "loading" as const, message: "Loading beat boundaries..." }
+    : heatmapStatus;
 
   return (
-    <div
-      ref={mapContainer}
-      style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
-    />
+    <>
+      <div
+        ref={mapContainer}
+        style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
+      />
+      {visibleStatus.state !== "ready" && visibleStatus.state !== "idle" && (
+        <div className="absolute left-4 bottom-24 z-10 max-w-xs rounded-lg border border-brand-700 bg-brand-800/95 px-3 py-2 text-xs text-brand-200 shadow-xl backdrop-blur-sm">
+          <div className="font-medium text-brand-50">
+            {visibleStatus.state === "loading" && "Loading map data"}
+            {visibleStatus.state === "empty" && "No matching data"}
+            {visibleStatus.state === "error" && "Map data issue"}
+          </div>
+          {visibleStatus.message && (
+            <div className="mt-1 text-brand-300">{visibleStatus.message}</div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 

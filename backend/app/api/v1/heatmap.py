@@ -35,14 +35,17 @@ def get_heatmap(
 
     Fast: uses ix_beat_rollups_heatmap_query composite index. ~15ms typical.
     """
-    if hour_max < hour_min:
-        raise HTTPException(400, "hour_max must be >= hour_min")
     if year is not None and (year_from is not None or year_to is not None):
         raise HTTPException(400, "Use either 'year' or 'year_from/year_to', not both")
 
+    hour_clause = (
+        "br.hour BETWEEN :hour_min AND :hour_max"
+        if hour_min <= hour_max
+        else "(br.hour >= :hour_min OR br.hour <= :hour_max)"
+    )
     where_clauses = [
         "c.slug = :city_slug",
-        "br.hour BETWEEN :hour_min AND :hour_max",
+        hour_clause,
     ]
     params: dict = {
         "city_slug": city_slug,

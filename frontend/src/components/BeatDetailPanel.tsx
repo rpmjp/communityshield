@@ -57,8 +57,8 @@ export default function BeatDetailPanel({
   };
 
   return (
-    <div className="border border-brand-700 rounded-lg p-4 bg-brand-800 space-y-3">
-      <div className="flex items-start justify-between">
+    <section className="border border-brand-700 rounded-lg bg-brand-800 overflow-hidden">
+      <div className="flex items-start justify-between border-b border-brand-700 px-4 py-3">
         <div>
           <div className="text-xs uppercase tracking-wider text-brand-300">
             Beat {beatNumber}
@@ -78,11 +78,25 @@ export default function BeatDetailPanel({
         </button>
       </div>
 
-      {error && <div className="text-red-300 text-sm">{error}</div>}
-      {!error && !stats && <div className="text-brand-300 text-sm">Loading...</div>}
+      {error && (
+        <div className="m-4 text-red-300 bg-red-950/30 border border-red-800 rounded px-3 py-2 text-sm">
+          We could not load this beat right now. {error}
+        </div>
+      )}
+      {!error && !stats && (
+        <div className="p-4 space-y-3" aria-label="Loading beat details">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="h-14 rounded bg-brand-900 animate-pulse" />
+            <div className="h-14 rounded bg-brand-900 animate-pulse" />
+            <div className="h-14 rounded bg-brand-900 animate-pulse" />
+          </div>
+          <div className="h-20 rounded bg-brand-900 animate-pulse" />
+          <div className="h-16 rounded bg-brand-900 animate-pulse" />
+        </div>
+      )}
 
       {stats && (
-        <>
+        <div className="p-4 space-y-3">
           <div className="grid grid-cols-3 gap-2 text-center">
             <Stat label="Incidents" value={stats.stats.total_incidents.toLocaleString()} />
             <Stat label="Arrests" value={`${(stats.stats.arrest_rate * 100).toFixed(0)}%`} />
@@ -93,26 +107,32 @@ export default function BeatDetailPanel({
             <div className="text-xs uppercase tracking-wider text-brand-300 mb-1">
               Top crime types ({year})
             </div>
-            <div className="space-y-1">
-              {stats.top_crime_types.map((t) => {
-                const pct = stats.stats.total_incidents > 0
-                  ? (t.incidents / stats.stats.total_incidents) * 100
-                  : 0;
-                return (
-                  <div key={t.primary_type} className="flex items-center gap-2 text-sm">
-                    <div className="w-32 truncate text-brand-200" title={t.primary_type}>
-                      {t.primary_type}
+            {stats.top_crime_types.length === 0 ? (
+              <div className="text-sm text-brand-400 border border-dashed border-brand-700 rounded p-3">
+                No incident mix is available for this beat and year.
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {stats.top_crime_types.map((t) => {
+                  const pct = stats.stats.total_incidents > 0
+                    ? (t.incidents / stats.stats.total_incidents) * 100
+                    : 0;
+                  return (
+                    <div key={t.primary_type} className="flex items-center gap-2 text-sm">
+                      <div className="w-32 truncate text-brand-200" title={t.primary_type}>
+                        {t.primary_type}
+                      </div>
+                      <div className="flex-1 bg-brand-900 rounded h-2 overflow-hidden">
+                        <div className="bg-accent-400 h-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="w-16 text-right text-brand-300 text-xs">
+                        {t.incidents.toLocaleString()}
+                      </div>
                     </div>
-                    <div className="flex-1 bg-brand-900 rounded h-2 overflow-hidden">
-                      <div className="bg-accent-400 h-full" style={{ width: `${pct}%` }} />
-                    </div>
-                    <div className="w-16 text-right text-brand-300 text-xs">
-                      {t.incidents.toLocaleString()}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div>
@@ -147,11 +167,11 @@ export default function BeatDetailPanel({
             className="w-full bg-brand-700 hover:bg-brand-600 border border-brand-600
                        text-brand-50 text-sm font-medium rounded px-3 py-2 transition-colors"
           >
-            Use this beat for prediction ↓
+            Use this beat for prediction
           </button>
-        </>
+        </div>
       )}
-    </div>
+    </section>
   );
 }
 

@@ -20,7 +20,7 @@ const STEPS = [
   },
   {
     title: "Understand each prediction",
-    body: "Every prediction comes with a 'Why?' panel showing SHAP feature contributions — see which inputs pushed the probability up or down.",
+    body: "Every prediction includes a 'Why?' panel showing which inputs pushed the estimate up or down. Use it as planning context, not as a decision by itself.",
     highlight: "side",
   },
 ];

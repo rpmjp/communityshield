@@ -42,14 +42,9 @@ function buildHeatmapQuery(filters: HeatmapFilters): string {
   const params = new URLSearchParams({
     city_slug: filters.city_slug,
     year: String(filters.year),
+    hour_min: String(filters.hour_min),
+    hour_max: String(filters.hour_max),
   });
-  if (filters.hour_min <= filters.hour_max) {
-    params.set("hour_min", String(filters.hour_min));
-    params.set("hour_max", String(filters.hour_max));
-  } else {
-    params.set("hour_min", "0");
-    params.set("hour_max", String(filters.hour_max));
-  }
   if (filters.primary_type) {
     params.set("primary_type", filters.primary_type);
   }

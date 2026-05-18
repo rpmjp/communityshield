@@ -66,6 +66,15 @@ def test_heatmap_returns_beats(client):
         assert "incident_count" in sample
 
 
+def test_heatmap_accepts_overnight_hour_range(client):
+    r = client.get("/api/v1/heatmap?city_slug=chicago&year=2024&hour_min=23&hour_max=6")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["filters"]["hour_min"] == 23
+    assert body["filters"]["hour_max"] == 6
+    assert isinstance(body["beats"], list)
+
+
 def test_heatmap_crime_types(client):
     r = client.get("/api/v1/heatmap/crime_types?city_slug=chicago")
     assert r.status_code == 200

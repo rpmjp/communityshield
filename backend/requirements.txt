@@ -9,7 +9,8 @@ sqlalchemy==2.0.36
 uvicorn[standard]==0.32.1
 xgboost==2.1.3
 joblib==1.4.2
-scikit-learn==1.6.0shap==0.46.0
+scikit-learn==1.6.0
+shap==0.46.0
 pytest==8.3.4
 pytest-asyncio==0.25.1
 httpx==0.28.1

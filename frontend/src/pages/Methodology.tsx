@@ -2,7 +2,11 @@ import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const CONTENT = `
+import methodologyData from "../data/methodology.json";
+import FeatureImportanceChart from "../components/charts/FeatureImportanceChart";
+import RocCurveChart from "../components/charts/RocCurveChart";
+
+const INTRO = `
 # Methodology
 
 CommunityShield is a community-focused public safety platform built on Chicago's open crime data. This page documents the engineering work behind the app: data pipeline, ML models, what worked, what didn't, and the honest limits of what the data can answer.
@@ -31,7 +35,9 @@ Chicago's crime classification rules changed around 2012, and reporting complete
 | Test | 2025-2026 | 261,301 |
 
 Strict year partitioning — no random folds — so the model never sees future data during training. Final metrics are reported on a clean 2025-2026 holdout.
+`;
 
+const RESULTS_TABLE = `
 ## Models trained
 
 Four model architectures were attempted, in order. Each result is real and reproducible.
@@ -44,13 +50,17 @@ Four model architectures were attempted, in order. Each result is real and repro
 | Hierarchical (sup → subtype) | Top-K crime types | 30% top-1, 75% top-5 |
 | **Arrest binary** | Will an arrest happen? | **87.9% acc, ROC-AUC 0.859** |
 | **Domestic binary** | Is this incident domestic-related? | **86.6% acc, ROC-AUC 0.916** |
+`;
 
+const FINDING = `
 ## The honest finding
 
 Predicting fine-grained crime *type* from these features (time + location) is structurally limited. The dataset describes when and where an incident happened, but the type depends on intent and method — information not in public data. After Optuna hyperparameter search (100 trials, 5-fold time-series CV), feature engineering with location encoding, and architecture variants (flat → binary → hierarchical), all approaches converged on a ~75% top-5 ceiling. The data ceiling is real, not a tuning issue.
 
-Predicting *outcomes* of incidents (arrest, domestic flag) is a different question and works well — those outcomes are causally downstream of features the data contains. Arrest model reaches ROC-AUC 0.859; domestic reaches 0.916. These are competitive with published research on this dataset.
+Predicting *outcomes* of incidents (arrest, domestic flag) is a different question and works well — those outcomes are causally downstream of features the data contains.
+`;
 
+const REST = `
 ## Feature engineering
 
 - Temporal: hour, day of week, month, weekend flag, quarter, policing shift (day/evening/midnight)
@@ -58,11 +68,11 @@ Predicting *outcomes* of incidents (arrest, domestic flag) is a different questi
 - Categorical: top-30 location_description grouped into a "location_group" + OTHER bucket (computed from train rows only to avoid leakage)
 - For arrest/domestic models: primary_type also included as a feature
 
-The largest single feature gain was adding location_description encoding (+5.5pp accuracy on the property binary model). The notebook EDA confirmed this signal.
+The largest single feature gain was adding location_description encoding (+5.5pp accuracy on the property binary model).
 
 ## Class imbalance
 
-Most crime types are dominated by THEFT/BATTERY. Using full inverse-frequency class weights collapsed model accuracy (over-predicting rare classes uniformly). Square-root inverse-frequency weights gave a better balance between recall on rare classes and overall accuracy. SMOTE was deliberately not used: when minority classes lack a separable region in feature space, SMOTE generates synthetic samples indistinguishable from majority classes and adds noise.
+Most crime types are dominated by THEFT/BATTERY. Using full inverse-frequency class weights collapsed model accuracy. Square-root inverse-frequency weights gave a better balance between recall on rare classes and overall accuracy. SMOTE was deliberately not used: when minority classes lack a separable region in feature space, SMOTE adds noise rather than signal.
 
 ## Model selection
 
@@ -104,7 +114,7 @@ Each binary model exposes SHAP TreeExplainer values via the API. The frontend's 
 ## Limitations
 
 - **Not predictive policing.** The models predict beat-level patterns from public data. They do not identify individuals, predict who will commit crimes, or recommend enforcement actions.
-- **Reporting bias.** Crime data reflects what was reported and recorded — under-reporting and over-policing of specific neighborhoods are encoded in the inputs. Models trained on this data inherit those biases.
+- **Reporting bias.** Crime data reflects what was reported and recorded — under-reporting and over-policing of specific neighborhoods are encoded in the inputs.
 - **Type prediction is weak.** Use the supercategory or arrest models for decisions, not the 27-class hierarchical prediction.
 - **Single-city.** The architecture supports multiple cities, but only Chicago is currently loaded.
 - **Static data.** Models are trained on historical data through early 2026 and not retrained automatically.
@@ -118,10 +128,12 @@ Built by Robert Jean Pierre · NJIT CS MS · [robertjeanpierre.com](https://robe
 
 
 export default function Methodology() {
+  const { arrest, domestic, property_binary } = methodologyData;
+
   return (
     <div className="min-h-screen bg-brand-900 text-brand-50">
       <div className="border-b border-brand-700 bg-brand-800/50 backdrop-blur-sm">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <ShieldHeart className="w-6 h-6 text-accent-400" />
             <div>
@@ -135,8 +147,74 @@ export default function Methodology() {
         </div>
       </div>
 
-      <article className="max-w-3xl mx-auto px-6 py-12 prose prose-invert prose-cs">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{CONTENT}</ReactMarkdown>
+      <article className="max-w-4xl mx-auto px-6 py-12 space-y-8">
+        <div className="prose prose-invert prose-cs max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{INTRO}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{RESULTS_TABLE}</ReactMarkdown>
+        </div>
+
+        {/* ROC curves */}
+        <section className="space-y-3">
+          <h2 className="text-2xl font-bold text-brand-50">ROC curves</h2>
+          <p className="text-brand-200 text-sm">
+            Each curve plots true positive rate vs false positive rate as the decision
+            threshold sweeps from 1 to 0. The dashed line is random-chance baseline.
+            Area under the curve (AUC) is a threshold-independent measure of how well
+            the model separates classes.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <RocCurveChart
+              title="Arrest"
+              data={arrest.roc}
+              auc={arrest.metrics.test?.roc_auc ?? 0}
+              color="#E8A04C"
+            />
+            <RocCurveChart
+              title="Domestic"
+              data={domestic.roc}
+              auc={domestic.metrics.test?.roc_auc ?? 0}
+              color="#76A593"
+            />
+            <RocCurveChart
+              title="Property crime (binary)"
+              data={property_binary.roc}
+              auc={property_binary.metrics.test?.roc_auc ?? 0}
+              color="#EAAC55"
+            />
+          </div>
+        </section>
+
+        {/* Feature importance */}
+        <section className="space-y-3">
+          <h2 className="text-2xl font-bold text-brand-50">Feature importance</h2>
+          <p className="text-brand-200 text-sm">
+            XGBoost gain — the total gain (loss reduction) attributable to splits on each
+            feature, summed across the boosted ensemble. Higher means the model relies on
+            that feature more.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <FeatureImportanceChart
+              title="Arrest model"
+              data={arrest.feature_importance}
+              color="#E8A04C"
+            />
+            <FeatureImportanceChart
+              title="Domestic model"
+              data={domestic.feature_importance}
+              color="#76A593"
+            />
+            <FeatureImportanceChart
+              title="Property crime model"
+              data={property_binary.feature_importance}
+              color="#EAAC55"
+            />
+          </div>
+        </section>
+
+        <div className="prose prose-invert prose-cs max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{FINDING}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{REST}</ReactMarkdown>
+        </div>
       </article>
 
       <div className="border-t border-brand-700 py-8 text-center text-xs text-brand-400">

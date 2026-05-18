@@ -63,9 +63,8 @@ jobs:
       - name: Run migrations (smoke check)
         env:
           DATABASE_URL: postgresql+psycopg://communityshield:devpassword@localhost:5433/communityshield_dev
-        run: |
-          alembic upgrade head || echo "Alembic upgrade had issues; tests requiring data will be skipped in CI"
-      - name: Note about CI tests
-        run: |
-          echo "Backend tests require seeded DB (cities, beats, models)."
-          echo "CI runs schema migrations only; full integration tests run locally."
+        run: alembic upgrade head
+      - name: Run seed-free API contract tests
+        env:
+          DATABASE_URL: postgresql+psycopg://communityshield:devpassword@localhost:5433/communityshield_dev
+        run: pytest tests/test_ci_contracts.py

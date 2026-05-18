@@ -1,13 +1,14 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import BeatDetailPanel from "./components/BeatDetailPanel";
+import BeatSearch from "./components/BeatSearch";
 import OnboardingOverlay from "./components/OnboardingOverlay";
 import FilterBar from "./components/FilterBar";
 import MapErrorBoundary from "./components/MapErrorBoundary";
 import PredictionPanel, { type PredictionPanelInitial } from "./components/PredictionPanel";
-import type { City, HeatmapFilters } from "./types";
+import { getCities, getHealthDb } from "./api/community";
+import type { BeatStats, City, HeatmapFilters } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 const DEFAULT_FILTERS: HeatmapFilters = {
   city_slug: "chicago",
   year: 2024,
@@ -25,6 +26,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [selectedBeat, setSelectedBeat] = useState<string | null>(null);
+  const [selectedBeatStats, setSelectedBeatStats] = useState<BeatStats | null>(null);
   const [predictionInitial, setPredictionInitial] = useState<PredictionPanelInitial | null>(null);
   const [manualPanelOpen, setManualPanelOpen] = useState(false);
   const panelOpen = manualPanelOpen || selectedBeat !== null;
@@ -35,23 +37,20 @@ export default function App() {
   const [filters, setFilters] = useState<HeatmapFilters>(DEFAULT_FILTERS);
 
   useEffect(() => {
-    fetch(`${API_BASE}/health/db`)
-      .then((r) => {
-        if (!r.ok) throw new Error("health check failed");
-        return r.json();
-      })
+    getHealthDb()
       .then(setHealth)
       .catch(() => setError("offline"));
-    fetch(`${API_BASE}/cities`)
-      .then((r) => {
-        if (!r.ok) throw new Error("cities unavailable");
-        return r.json();
-      })
+    getCities()
       .then(setCities)
       .catch(() => setCities([]));
   }, []);
 
   const resetFilters = () => setFilters(DEFAULT_FILTERS);
+  const selectBeat = (beatNumber: string | null) => {
+    setSelectedBeat(beatNumber);
+    setSelectedBeatStats(null);
+    if (beatNumber) setManualPanelOpen(true);
+  };
   const filtersChanged = JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS);
 
   return (
@@ -68,7 +67,7 @@ export default function App() {
                     filters={filters}
                     cities={cities}
                     selectedBeat={selectedBeat}
-                    onSelectBeat={setSelectedBeat}
+                    onSelectBeat={selectBeat}
                   />
                 </Suspense>
               }
@@ -77,7 +76,7 @@ export default function App() {
                 filters={filters}
                 cities={cities}
                 selectedBeat={selectedBeat}
-                onSelectBeat={setSelectedBeat}
+                onSelectBeat={selectBeat}
               />
             </MapErrorBoundary>
           </Suspense>
@@ -118,6 +117,26 @@ export default function App() {
 
             <div className="flex-1 flex sm:justify-end min-w-0">
               <FilterBar filters={filters} cities={cities} onChange={setFilters} onReset={resetFilters} />
+            </div>
+          </div>
+
+          <div className="absolute left-2 sm:left-4 top-[10.75rem] sm:top-[9.75rem] z-10 max-w-[calc(100%-1rem)]">
+            <div className="rounded-lg border border-brand-700 bg-brand-800/90 px-3 py-2 text-xs text-brand-200 shadow-xl backdrop-blur-sm">
+              {selectedBeat ? (
+                <div className="flex items-center gap-3">
+                  <span>
+                    Beat <span className="font-semibold text-brand-50">{selectedBeat}</span> selected
+                  </span>
+                  <button
+                    onClick={() => selectBeat(null)}
+                    className="text-accent-300 hover:text-accent-200 rounded focus:outline-none focus:ring-2 focus:ring-accent-400"
+                  >
+                    Clear
+                  </button>
+                </div>
+              ) : (
+                <span>Click a beat on the map or search by beat number.</span>
+              )}
             </div>
           </div>
 
@@ -196,17 +215,32 @@ export default function App() {
               <p className="mt-1 text-xs leading-relaxed text-brand-300">
                 Use the map and model outputs to spot patterns for prevention, services, and resource planning. Treat every estimate as context that needs local review.
               </p>
+              <details className="mt-2 text-xs text-brand-300">
+                <summary className="cursor-pointer text-accent-300 rounded focus:outline-none focus:ring-2 focus:ring-accent-400">
+                  Responsible use
+                </summary>
+                <p className="mt-1 leading-relaxed">
+                  No person-level predictions. Historical reported data can reflect reporting and enforcement bias, so estimates need local context.
+                </p>
+              </details>
             </section>
+            <BeatSearch
+              citySlug={filters.city_slug}
+              selectedBeat={selectedBeat}
+              onSelectBeat={selectBeat}
+            />
             {selectedBeat && (
               <BeatDetailPanel
                 key={`${filters.city_slug}-${selectedBeat}-${filters.year}`}
                 citySlug={filters.city_slug}
                 beatNumber={selectedBeat}
                 year={filters.year}
-                onClose={() => setSelectedBeat(null)}
+                onClose={() => selectBeat(null)}
                 onUsedForPrediction={setPredictionInitial}
+                onStatsLoaded={setSelectedBeatStats}
               />
             )}
+            {selectedBeatStats && <BeatInsights stats={selectedBeatStats} />}
             <PredictionPanel
               key={predictionInitial
                 ? `${predictionInitial.beat_num}-${predictionInitial.district}`
@@ -217,6 +251,41 @@ export default function App() {
         </div>
       </div>
     </>
+  );
+}
+
+function BeatInsights({ stats }: { stats: BeatStats }) {
+  const peakHour = stats.hour_distribution.reduce(
+    (best, count, hour) => count > best.count ? { hour, count } : best,
+    { hour: 0, count: -1 },
+  );
+  const topType = stats.top_crime_types[0];
+  const total = stats.stats.total_incidents;
+
+  return (
+    <section className="border border-brand-700 rounded-lg bg-brand-800 px-4 py-3 space-y-2">
+      <div className="text-xs uppercase tracking-wider text-brand-300">Quick insights</div>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <Insight label="Top type" value={topType?.primary_type ?? "No data"} />
+        <Insight label="Peak hour" value={peakHour.count > 0 ? `${peakHour.hour}:00` : "No data"} />
+        <Insight label="Arrest rate" value={`${(stats.stats.arrest_rate * 100).toFixed(0)}%`} />
+        <Insight label="Domestic" value={`${(stats.stats.domestic_rate * 100).toFixed(0)}%`} />
+      </div>
+      <p className="text-xs text-brand-400">
+        {total > 0
+          ? `${total.toLocaleString()} incidents are recorded for Beat ${stats.beat_number} in ${stats.year}.`
+          : `No incidents are recorded for Beat ${stats.beat_number} in ${stats.year}.`}
+      </p>
+    </section>
+  );
+}
+
+function Insight({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded bg-brand-900 p-2">
+      <div className="text-[10px] uppercase tracking-wider text-brand-400">{label}</div>
+      <div className="mt-0.5 truncate font-medium text-brand-100" title={value}>{value}</div>
+    </div>
   );
 }
 

@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-prod"
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
 
 @lru_cache

@@ -3,9 +3,8 @@ import L from "leaflet";
 import { MapContainer, GeoJSON, TileLayer, useMap, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Feature, FeatureCollection } from "geojson";
+import { getBeatGeoJson, getHeatmap } from "../api/community";
 import type { City, HeatmapFilters, HeatmapResponse } from "../types";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 interface Props {
   filters: HeatmapFilters;
@@ -38,20 +37,6 @@ function colorForCount(count: number, max: number): string {
   return "#1a3d33";
 }
 
-function buildHeatmapQuery(filters: HeatmapFilters): string {
-  const params = new URLSearchParams({
-    city_slug: filters.city_slug,
-    year: String(filters.year),
-    hour_min: String(filters.hour_min),
-    hour_max: String(filters.hour_max),
-  });
-  if (filters.primary_type) {
-    params.set("primary_type", filters.primary_type);
-  }
-  return params.toString();
-}
-
-
 function CityBoundsController({ cities, citySlug }: { cities: City[]; citySlug: string }) {
   const map = useMap();
   useEffect(() => {
@@ -83,9 +68,8 @@ export default function LeafletMap({ filters, cities, selectedBeat, onSelectBeat
   useEffect(() => { selectedBeatRef.current = selectedBeat; }, [selectedBeat]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/geo/beats?city_slug=${filters.city_slug}`)
-      .then((r) => r.json())
-      .then((data) => setBeats(data))
+    getBeatGeoJson(filters.city_slug)
+      .then((data) => setBeats(data as FeatureCollection))
       .catch((e) => {
         console.error("[LeafletMap] beats fetch failed:", e);
         setBeats({ type: "FeatureCollection", features: [] });
@@ -94,9 +78,7 @@ export default function LeafletMap({ filters, cities, selectedBeat, onSelectBeat
 
   useEffect(() => {
     if (!beats) return;
-    const query = buildHeatmapQuery(filters);
-    fetch(`${API_BASE}/heatmap?${query}`)
-      .then((r) => r.json())
+    getHeatmap(filters)
       .then((data: HeatmapResponse) => {
         const c: Record<string, number> = {};
         data.beats.forEach((b) => { c[b.beat_number] = b.incident_count; });

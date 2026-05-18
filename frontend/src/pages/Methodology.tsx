@@ -132,7 +132,7 @@ export default function Methodology() {
 
   return (
     <div className="min-h-screen bg-brand-900 text-brand-50">
-      <div className="border-b border-brand-700 bg-brand-800/50 backdrop-blur-sm">
+      <div className="sticky top-0 z-20 border-b border-brand-700 bg-brand-800/90 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity rounded focus:outline-none focus:ring-2 focus:ring-accent-400">
             <ShieldHeart className="w-6 h-6 text-accent-400" />
@@ -148,13 +148,51 @@ export default function Methodology() {
       </div>
 
       <article className="max-w-4xl mx-auto px-6 py-12 space-y-8">
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard label="Rows ingested" value="8.5M" />
+          <MetricCard label="Police beats" value="274" />
+          <MetricCard label="Best AUC" value="0.916" />
+          <MetricCard label="Model tasks" value="4" />
+        </section>
+
+        <nav className="rounded-lg border border-brand-700 bg-brand-800 px-4 py-3 text-sm">
+          <div className="text-xs uppercase tracking-wider text-brand-300 mb-2">
+            Review path
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Responsible AI", href: "#responsible-ai" },
+              { label: "ROC curves", href: "#roc-curves" },
+              { label: "Feature importance", href: "#feature-importance" },
+              { label: "Architecture", href: "#architecture" },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="rounded border border-brand-700 bg-brand-900 px-2 py-1 text-brand-200 hover:border-accent-400 hover:text-accent-300 focus:outline-none focus:ring-2 focus:ring-accent-400"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </nav>
+
+        <section id="responsible-ai" className="rounded-lg border border-accent-700 bg-accent-900/30 px-4 py-3 scroll-mt-24">
+          <div className="text-xs uppercase tracking-wider text-accent-200">
+            Responsible AI boundary
+          </div>
+          <p className="mt-1 text-sm leading-relaxed text-accent-100/90">
+            CommunityShield exposes aggregate, beat-level context from historical public records. It does not predict individuals, recommend enforcement, or replace local review.
+          </p>
+        </section>
+
         <div className="prose prose-invert prose-cs max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{INTRO}</ReactMarkdown>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{RESULTS_TABLE}</ReactMarkdown>
         </div>
 
         {/* ROC curves */}
-        <section className="space-y-3">
+        <section id="roc-curves" className="space-y-3 scroll-mt-24">
           <h2 className="text-2xl font-bold text-brand-50">ROC curves</h2>
           <p className="text-brand-200 text-sm">
             Each curve plots true positive rate vs false positive rate as the decision
@@ -185,7 +223,7 @@ export default function Methodology() {
         </section>
 
         {/* Feature importance */}
-        <section className="space-y-3">
+        <section id="feature-importance" className="space-y-3 scroll-mt-24">
           <h2 className="text-2xl font-bold text-brand-50">Feature importance</h2>
           <p className="text-brand-200 text-sm">
             XGBoost gain — the total gain (loss reduction) attributable to splits on each
@@ -213,6 +251,7 @@ export default function Methodology() {
 
         <div className="prose prose-invert prose-cs max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{FINDING}</ReactMarkdown>
+          <div id="architecture" className="scroll-mt-24" />
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{REST}</ReactMarkdown>
         </div>
       </article>
@@ -220,6 +259,15 @@ export default function Methodology() {
       <div className="border-t border-brand-700 py-8 text-center text-xs text-brand-400">
         Built with care · open source · no ads · no tracking
       </div>
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-brand-700 bg-brand-800 p-4">
+      <div className="text-2xl font-semibold text-accent-300">{value}</div>
+      <div className="mt-1 text-xs uppercase tracking-wider text-brand-300">{label}</div>
     </div>
   );
 }

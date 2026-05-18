@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
+import { getCrimeTypes } from "../api/community";
 import type { City, CrimeTypeOption, HeatmapFilters } from "../types";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 interface Props {
   filters: HeatmapFilters;
@@ -28,8 +27,7 @@ export default function FilterBar({ filters, cities, onChange, onReset }: Props)
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/heatmap/crime_types?city_slug=${filters.city_slug}`)
-      .then((r) => r.json())
+    getCrimeTypes(filters.city_slug)
       .then((data) => {
         if (cancelled) return;
         setCrimeTypesState({

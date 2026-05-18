@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { getBeatGeoJson, getHeatmap } from "../api/community";
 import type { City, HeatmapFilters, HeatmapResponse } from "../types";
 
 const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 interface Props {
   filters: HeatmapFilters;
@@ -24,19 +24,6 @@ function detectWebGL(): boolean {
   } catch {
     return false;
   }
-}
-
-function buildHeatmapQuery(filters: HeatmapFilters): string {
-  const params = new URLSearchParams({
-    city_slug: filters.city_slug,
-    year: String(filters.year),
-    hour_min: String(filters.hour_min),
-    hour_max: String(filters.hour_max),
-  });
-  if (filters.primary_type) {
-    params.set("primary_type", filters.primary_type);
-  }
-  return params.toString();
 }
 
 export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }: Props) {
@@ -108,11 +95,7 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
       }
 
       try {
-        const res = await fetch(
-          `${API_BASE}/geo/beats?city_slug=${filters.city_slug}`
-        );
-        if (!res.ok) throw new Error(`Beats fetch failed: ${res.status}`);
-        const beatsGeoJson = await res.json();
+        const beatsGeoJson = await getBeatGeoJson(filters.city_slug);
         beatNumbersRef.current = beatsGeoJson.features
           .map((feature: { properties?: { beat_number?: string } }) => feature.properties?.beat_number)
           .filter((beatNumber: string | undefined): beatNumber is string => Boolean(beatNumber));
@@ -255,10 +238,7 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
     const loadHeatmap = async () => {
       setHeatmapStatus({ state: "loading", message: "Loading incident counts..." });
       try {
-        const query = buildHeatmapQuery(filters);
-        const res = await fetch(`${API_BASE}/heatmap?${query}`);
-        if (!res.ok) throw new Error(`Heatmap fetch failed: ${res.status}`);
-        const data: HeatmapResponse = await res.json();
+        const data: HeatmapResponse = await getHeatmap(filters);
 
         // Build a map of beat_number -> incident count
         const counts: Record<string, number> = {};

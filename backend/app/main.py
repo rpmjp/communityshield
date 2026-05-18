@@ -3,7 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import beats, cities, geo, health, heatmap, predict
+from app.config import get_settings
 
+settings = get_settings()
 app = FastAPI(
     title="CommunityShield API",
     version="0.1.0",
@@ -13,10 +15,7 @@ app = FastAPI(
 # CORS for local dev frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

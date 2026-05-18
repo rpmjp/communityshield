@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
+import { getBeatDetail } from "../api/community";
 import type { BeatStats } from "../types";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 interface Props {
   citySlug: string;
@@ -15,24 +14,22 @@ interface Props {
     longitude: number;
     primary_type: string;
   }) => void;
+  onStatsLoaded?: (stats: BeatStats) => void;
 }
 
 export default function BeatDetailPanel({
-  citySlug, beatNumber, year, onClose, onUsedForPrediction,
+  citySlug, beatNumber, year, onClose, onUsedForPrediction, onStatsLoaded,
 }: Props) {
   const [stats, setStats] = useState<BeatStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/beats/${beatNumber}?city_slug=${citySlug}&year=${year}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`Beat fetch failed: ${r.status}`);
-        return r.json();
-      })
+    getBeatDetail(citySlug, beatNumber, year)
       .then((data) => {
         if (cancelled) return;
         setStats(data);
+        onStatsLoaded?.(data);
         setError(null);
       })
       .catch((e) => {
@@ -42,7 +39,7 @@ export default function BeatDetailPanel({
         setStats(null);
       });
     return () => { cancelled = true; };
-  }, [citySlug, beatNumber, year]);
+  }, [citySlug, beatNumber, year, onStatsLoaded]);
 
   const useForPrediction = () => {
     if (!stats) return;

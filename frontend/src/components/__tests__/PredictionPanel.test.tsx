@@ -101,4 +101,17 @@ describe("PredictionPanel", () => {
     expect(screen.getByText(/Hour must be a whole number/i)).toBeInTheDocument();
     expect(predictAll).not.toHaveBeenCalled();
   });
+
+  it("shows a friendly error when prediction fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(predictAll).mockRejectedValue(
+      new Error("Prediction service is unavailable. Check the inputs or try again in a moment.")
+    );
+
+    render(<PredictionPanel />);
+    fireEvent.click(screen.getByRole("button", { name: /Run prediction/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Prediction service is unavailable/i);
+    consoleError.mockRestore();
+  });
 });

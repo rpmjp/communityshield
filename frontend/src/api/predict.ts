@@ -12,8 +12,11 @@ export async function predictAll(
     body: JSON.stringify(features),
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Prediction failed (${res.status}): ${text}`);
+    console.error("[predictAll] Prediction request failed", {
+      status: res.status,
+      body: await res.text(),
+    });
+    throw new Error("Prediction service is unavailable. Check the inputs or try again in a moment.");
   }
   return res.json();
 }

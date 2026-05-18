@@ -7,6 +7,7 @@ interface Props {
   filters: HeatmapFilters;
   cities: City[];
   onChange: (filters: HeatmapFilters) => void;
+  onReset: () => void;
 }
 
 const HOUR_PRESETS: { label: string; min: number; max: number }[] = [
@@ -18,7 +19,7 @@ const HOUR_PRESETS: { label: string; min: number; max: number }[] = [
 
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 
-export default function FilterBar({ filters, cities, onChange }: Props) {
+export default function FilterBar({ filters, cities, onChange, onReset }: Props) {
   const [crimeTypesState, setCrimeTypesState] = useState<{
     citySlug: string;
     status: "loading" | "ready" | "error";
@@ -59,15 +60,18 @@ export default function FilterBar({ filters, cities, onChange }: Props) {
     : [];
 
   return (
-    <div className="bg-brand-800/95 backdrop-blur-sm border border-brand-700 rounded-lg
-                    px-4 py-3 shadow-xl flex items-center gap-4 text-sm flex-wrap">
+    <div
+      className="bg-brand-800/95 backdrop-blur-sm border border-brand-700 rounded-lg
+                 px-4 py-3 shadow-xl flex items-center gap-4 text-sm flex-wrap"
+      aria-label="Map filters"
+    >
       {/* City selector */}
       <label className="flex items-center gap-2">
         <span className="text-brand-300">City</span>
         <select
           value={filters.city_slug}
           onChange={(e) => onChange({ ...filters, city_slug: e.target.value })}
-          className="bg-brand-900 border border-brand-700 rounded px-2 py-1"
+          className="bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400"
           disabled={cities.length <= 1}
         >
           {cities.length === 0 && <option value={filters.city_slug}>Loading cities</option>}
@@ -83,7 +87,7 @@ export default function FilterBar({ filters, cities, onChange }: Props) {
         <select
           value={filters.year}
           onChange={(e) => onChange({ ...filters, year: Number(e.target.value) })}
-          className="bg-brand-900 border border-brand-700 rounded px-2 py-1"
+          className="bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400"
         >
           {YEARS.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -99,7 +103,7 @@ export default function FilterBar({ filters, cities, onChange }: Props) {
           onChange={(e) =>
             onChange({ ...filters, primary_type: e.target.value || null })
           }
-          className="bg-brand-900 border border-brand-700 rounded px-2 py-1 max-w-[12rem]"
+          className="bg-brand-900 border border-brand-700 rounded px-2 py-1 max-w-[12rem] focus:outline-none focus:ring-2 focus:ring-accent-400"
           disabled={crimeTypesLoading || crimeTypesError}
         >
           <option value="">
@@ -120,7 +124,7 @@ export default function FilterBar({ filters, cities, onChange }: Props) {
           <button
             key={p.label}
             onClick={() => onChange({ ...filters, hour_min: p.min, hour_max: p.max })}
-            className={`px-2 py-1 rounded text-xs transition-colors ${
+          className={`px-2 py-1 rounded text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 ${
               presetActive(p.min, p.max)
                 ? "bg-accent-400 text-brand-900 font-medium"
                 : "bg-brand-900 border border-brand-700 text-brand-200 hover:bg-brand-700"
@@ -130,6 +134,12 @@ export default function FilterBar({ filters, cities, onChange }: Props) {
           </button>
         ))}
       </div>
+      <button
+        onClick={onReset}
+        className="text-xs text-brand-300 hover:text-accent-300 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400"
+      >
+        Reset
+      </button>
     </div>
   );
 }

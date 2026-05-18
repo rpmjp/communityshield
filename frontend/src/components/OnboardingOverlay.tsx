@@ -67,7 +67,7 @@ export default function OnboardingOverlay() {
           </div>
           <button
             onClick={dismiss}
-            className="text-brand-400 hover:text-brand-100 text-sm"
+            className="text-brand-400 hover:text-brand-100 text-sm rounded focus:outline-none focus:ring-2 focus:ring-accent-400"
           >
             Skip
           </button>
@@ -82,14 +82,14 @@ export default function OnboardingOverlay() {
           <button
             onClick={() => setStep(Math.max(0, step - 1))}
             disabled={step === 0}
-            className="text-sm text-brand-300 hover:text-brand-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="text-sm text-brand-300 hover:text-brand-100 disabled:opacity-30 disabled:cursor-not-allowed rounded focus:outline-none focus:ring-2 focus:ring-accent-400"
           >
-            ← Back
+            Back
           </button>
           <button
             onClick={next}
             className="bg-accent-400 text-brand-900 font-medium rounded px-4 py-2 text-sm
-                       hover:bg-accent-300 transition-colors"
+                       hover:bg-accent-300 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-200"
           >
             {step < STEPS.length - 1 ? `Next (${step + 1}/${STEPS.length})` : "Got it"}
           </button>

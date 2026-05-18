@@ -134,15 +134,15 @@ export default function Methodology() {
     <div className="min-h-screen bg-brand-900 text-brand-50">
       <div className="border-b border-brand-700 bg-brand-800/50 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity rounded focus:outline-none focus:ring-2 focus:ring-accent-400">
             <ShieldHeart className="w-6 h-6 text-accent-400" />
             <div>
               <div className="font-bold text-lg leading-tight">CommunityShield</div>
               <div className="text-xs text-brand-300">Methodology</div>
             </div>
           </Link>
-          <Link to="/" className="text-sm text-accent-400 hover:text-accent-300">
-            ← Back to map
+          <Link to="/" className="text-sm text-accent-400 hover:text-accent-300 rounded focus:outline-none focus:ring-2 focus:ring-accent-400">
+            Back to map
           </Link>
         </div>
       </div>

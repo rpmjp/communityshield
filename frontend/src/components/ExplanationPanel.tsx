@@ -10,7 +10,7 @@ export default function ExplanationPanel({ title, explanation }: Props) {
 
   return (
     <details className="bg-brand-900/60 border border-brand-700 rounded text-xs">
-      <summary className="cursor-pointer px-3 py-1.5 text-brand-300 hover:text-brand-100 select-none">
+      <summary className="cursor-pointer px-3 py-1.5 text-brand-300 hover:text-brand-100 select-none rounded focus:outline-none focus:ring-2 focus:ring-accent-400">
         Why? · {title}
       </summary>
       <div className="px-3 pb-3 pt-1 space-y-1.5">

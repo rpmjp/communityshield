@@ -111,7 +111,8 @@ export default function PredictionPanel({ initial }: Props = {}) {
       const res = await predictAll(features);
       setResult(res);
     } catch (e) {
-      setError(String(e));
+      console.error("[PredictionPanel] Prediction failed", e);
+      setError(e instanceof Error ? e.message : "Prediction service is unavailable. Try again in a moment.");
     } finally {
       setLoading(false);
     }
@@ -135,14 +136,14 @@ export default function PredictionPanel({ initial }: Props = {}) {
           <div className="text-brand-300">Hour of day</div>
           <input type="number" min={0} max={23} value={features.hour}
             onChange={e => update("hour", Number(e.target.value))}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1" />
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400" />
           <div className="text-[10px] text-brand-500">0-23</div>
         </label>
         <label className="space-y-1">
           <div className="text-brand-300">Day of week</div>
           <select value={features.day_of_week}
             onChange={e => update("day_of_week", Number(e.target.value))}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1">
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400">
             {DAYS.map((day, index) => <option key={day} value={index}>{day}</option>)}
           </select>
         </label>
@@ -150,19 +151,19 @@ export default function PredictionPanel({ initial }: Props = {}) {
           <div className="text-brand-300">Police beat</div>
           <input type="number" value={features.beat_num}
             onChange={e => update("beat_num", Number(e.target.value))}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1" />
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400" />
         </label>
         <label className="space-y-1">
           <div className="text-brand-300">District</div>
           <input value={features.district}
             onChange={e => update("district", e.target.value)}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1" />
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400" />
         </label>
         <label className="space-y-1">
           <div className="text-brand-300">Month</div>
           <select value={features.month}
             onChange={e => update("month", Number(e.target.value))}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1">
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400">
             {MONTHS.map((month, index) => <option key={month} value={index + 1}>{month}</option>)}
           </select>
         </label>
@@ -170,25 +171,25 @@ export default function PredictionPanel({ initial }: Props = {}) {
           <div className="text-brand-300">Community area</div>
           <input type="number" min={1} max={77} value={features.community_area}
             onChange={e => update("community_area", Number(e.target.value))}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1" />
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400" />
         </label>
         <label className="space-y-1">
           <div className="text-brand-300">Latitude</div>
           <input type="number" step="0.001" value={features.latitude}
             onChange={e => update("latitude", Number(e.target.value))}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1" />
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400" />
         </label>
         <label className="space-y-1">
           <div className="text-brand-300">Longitude</div>
           <input type="number" step="0.001" value={features.longitude}
             onChange={e => update("longitude", Number(e.target.value))}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1" />
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400" />
         </label>
         <label className="space-y-1 col-span-2">
           <div className="text-brand-300">Location type</div>
           <select value={features.location_group}
             onChange={e => update("location_group", e.target.value)}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1">
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400">
             {LOCATION_GROUPS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
           </select>
         </label>
@@ -196,19 +197,19 @@ export default function PredictionPanel({ initial }: Props = {}) {
           <div className="text-brand-300">Crime type (for arrest/domestic context)</div>
           <select value={features.primary_type}
             onChange={e => update("primary_type", e.target.value)}
-            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1">
+            className="w-full bg-brand-900 border border-brand-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent-400">
             {PRIMARY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </label>
 
         <button onClick={runPrediction} disabled={loading}
           className="col-span-2 w-full bg-accent-400 text-brand-900 font-medium rounded px-4 py-2
-                     hover:bg-accent-300 disabled:opacity-50 transition-colors">
+                     hover:bg-accent-300 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-200">
           {loading ? "Estimating..." : "Run prediction"}
         </button>
 
-        {validationError && <div className="col-span-2 text-amber-200 bg-amber-900/30 border border-amber-700 rounded px-3 py-2 text-sm">{validationError}</div>}
-        {error && <div className="col-span-2 text-red-300 bg-red-950/30 border border-red-800 rounded px-3 py-2 text-sm">{error}</div>}
+        {validationError && <div className="col-span-2 text-amber-200 bg-amber-900/30 border border-amber-700 rounded px-3 py-2 text-sm" role="alert">{validationError}</div>}
+        {error && <div className="col-span-2 text-red-300 bg-red-950/30 border border-red-800 rounded px-3 py-2 text-sm" role="alert">{error}</div>}
       </div>
 
       {!error && !result && !loading && (

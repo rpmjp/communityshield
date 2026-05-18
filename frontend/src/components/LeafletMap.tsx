@@ -86,7 +86,10 @@ export default function LeafletMap({ filters, cities, selectedBeat, onSelectBeat
     fetch(`${API_BASE}/geo/beats?city_slug=${filters.city_slug}`)
       .then((r) => r.json())
       .then((data) => setBeats(data))
-      .catch((e) => console.error("[LeafletMap] beats fetch failed:", e));
+      .catch((e) => {
+        console.error("[LeafletMap] beats fetch failed:", e);
+        setBeats({ type: "FeatureCollection", features: [] });
+      });
   }, [filters.city_slug]);
 
   useEffect(() => {
@@ -162,6 +165,14 @@ export default function LeafletMap({ filters, cities, selectedBeat, onSelectBeat
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-brand-900 text-brand-300 text-sm z-0">
         Loading map...
+      </div>
+    );
+  }
+
+  if (beats.features.length === 0) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-brand-900 text-brand-300 text-sm z-0">
+        Map boundaries are unavailable. Try refreshing or checking the backend service.
       </div>
     );
   }

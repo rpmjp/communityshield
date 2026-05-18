@@ -326,7 +326,10 @@ export default function CrimeMap({ filters, cities, selectedBeat, onSelectBeat }
         style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
       />
       {visibleStatus.state !== "ready" && visibleStatus.state !== "idle" && (
-        <div className="absolute left-4 bottom-24 z-10 max-w-xs rounded-lg border border-brand-700 bg-brand-800/95 px-3 py-2 text-xs text-brand-200 shadow-xl backdrop-blur-sm">
+        <div
+          className="absolute left-4 bottom-24 z-10 max-w-xs rounded-lg border border-brand-700 bg-brand-800/95 px-3 py-2 text-xs text-brand-200 shadow-xl backdrop-blur-sm"
+          role={visibleStatus.state === "error" ? "alert" : "status"}
+        >
           <div className="font-medium text-brand-50">
             {visibleStatus.state === "loading" && "Loading map data"}
             {visibleStatus.state === "empty" && "No matching data"}

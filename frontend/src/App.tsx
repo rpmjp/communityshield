@@ -1,15 +1,22 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import BeatDetailPanel from "./components/BeatDetailPanel";
 import OnboardingOverlay from "./components/OnboardingOverlay";
-import CrimeMap from "./components/CrimeMap";
 import FilterBar from "./components/FilterBar";
 import MapErrorBoundary from "./components/MapErrorBoundary";
-import MapFallback from "./components/MapFallback";
 import PredictionPanel, { type PredictionPanelInitial } from "./components/PredictionPanel";
 import type { City, HeatmapFilters } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const DEFAULT_FILTERS: HeatmapFilters = {
+  city_slug: "chicago",
+  year: 2024,
+  hour_min: 0,
+  hour_max: 23,
+  primary_type: null,
+};
+const CrimeMap = lazy(() => import("./components/CrimeMap"));
+const MapFallback = lazy(() => import("./components/MapFallback"));
 
 type Health = { status: string; database: string };
 
@@ -25,24 +32,27 @@ export default function App() {
     setManualPanelOpen(open);
     if (!open) setSelectedBeat(null);
   };
-  const [filters, setFilters] = useState<HeatmapFilters>({
-    city_slug: "chicago",
-    year: 2024,
-    hour_min: 0,
-    hour_max: 23,
-    primary_type: null,
-  });
+  const [filters, setFilters] = useState<HeatmapFilters>(DEFAULT_FILTERS);
 
   useEffect(() => {
     fetch(`${API_BASE}/health/db`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("health check failed");
+        return r.json();
+      })
       .then(setHealth)
-      .catch((e) => setError(String(e)));
+      .catch(() => setError("offline"));
     fetch(`${API_BASE}/cities`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("cities unavailable");
+        return r.json();
+      })
       .then(setCities)
       .catch(() => setCities([]));
   }, []);
+
+  const resetFilters = () => setFilters(DEFAULT_FILTERS);
+  const filtersChanged = JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS);
 
   return (
     <>
@@ -50,23 +60,27 @@ export default function App() {
       <div className="fixed inset-0 flex flex-col lg:flex-row bg-brand-900 text-brand-50">
         {/* Map area */}
         <div className="flex-1 relative min-h-0">
-          <MapErrorBoundary
-          fallback={
-            <MapFallback
-              filters={filters}
-              cities={cities}
-              selectedBeat={selectedBeat}
-              onSelectBeat={setSelectedBeat}
-            />
-          }
-        >
-          <CrimeMap
-            filters={filters}
-            cities={cities}
-            selectedBeat={selectedBeat}
-            onSelectBeat={setSelectedBeat}
-          />
-        </MapErrorBoundary>
+          <Suspense fallback={<MapLoading />}>
+            <MapErrorBoundary
+              fallback={
+                <Suspense fallback={<MapLoading />}>
+                  <MapFallback
+                    filters={filters}
+                    cities={cities}
+                    selectedBeat={selectedBeat}
+                    onSelectBeat={setSelectedBeat}
+                  />
+                </Suspense>
+              }
+            >
+              <CrimeMap
+                filters={filters}
+                cities={cities}
+                selectedBeat={selectedBeat}
+                onSelectBeat={setSelectedBeat}
+              />
+            </MapErrorBoundary>
+          </Suspense>
 
           {/* Top toolbar */}
           <div className="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 z-10
@@ -83,35 +97,51 @@ export default function App() {
                   Community-led safety
                 </div>
               </div>
-              <div className="pl-2 sm:pl-3 border-l border-brand-700 text-xs flex-shrink-0">
+              <div
+                className="pl-2 sm:pl-3 border-l border-brand-700 text-xs flex-shrink-0"
+                role="status"
+                aria-label={error ? "API offline" : health ? "API online" : "Checking API status"}
+              >
                 {error && <span className="text-red-300">offline</span>}
                 {!error && health && (
-                  <span className="text-accent-400">●</span>
+                  <span className="text-accent-400" aria-hidden="true">●</span>
                 )}
                 {!error && !health && <span className="text-brand-300">…</span>}
               </div>
               <Link
                 to="/methodology"
-                className="pl-2 sm:pl-3 border-l border-brand-700 text-xs text-brand-300 hover:text-accent-400 flex-shrink-0 whitespace-nowrap"
+                className="pl-2 sm:pl-3 border-l border-brand-700 text-xs text-brand-300 hover:text-accent-400 flex-shrink-0 whitespace-nowrap rounded focus:outline-none focus:ring-2 focus:ring-accent-400"
               >
                 Methodology
               </Link>
             </div>
 
             <div className="flex-1 flex sm:justify-end min-w-0">
-              <FilterBar filters={filters} cities={cities} onChange={setFilters} />
+              <FilterBar filters={filters} cities={cities} onChange={setFilters} onReset={resetFilters} />
             </div>
           </div>
 
           {/* Legend */}
           <div className="hidden sm:block absolute bottom-8 left-4 z-10 bg-brand-800/90 backdrop-blur-sm
-                          border border-brand-700 rounded-lg px-3 py-2 text-xs shadow-xl">
-            <div className="text-brand-300 uppercase tracking-wider mb-1">Incidents</div>
+                          border border-brand-700 rounded-lg px-3 py-2 text-xs shadow-xl"
+               aria-label="Incident color legend">
+            <div className="text-brand-300 uppercase tracking-wider mb-1">Incidents for filters</div>
             <div className="flex items-center gap-1">
               <span className="text-brand-400">low</span>
               <div className="w-32 h-2 rounded"
                    style={{ background: "linear-gradient(to right, #1a3d33, #2D5F4F, #7a4e1f, #c97a2e, #E8A04C)" }} />
               <span className="text-brand-400">high</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-brand-400">
+              <span>{filters.year} · {filters.primary_type ?? "all types"}</span>
+              {filtersChanged && (
+                <button
+                  onClick={resetFilters}
+                  className="text-accent-300 hover:text-accent-200 focus:outline-none focus:ring-2 focus:ring-accent-400 rounded"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           </div>
 
@@ -143,6 +173,7 @@ export default function App() {
             shadow-2xl lg:shadow-none
             ${panelOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
           `}
+          aria-label="Prediction and beat details panel"
         >
           <div className="lg:hidden sticky top-0 bg-brand-900 border-b border-brand-700 px-4 py-2 flex items-center justify-between z-10">
             <span className="text-sm font-medium text-brand-200">
@@ -150,7 +181,7 @@ export default function App() {
             </span>
             <button
               onClick={() => setPanelOpen(false)}
-              className="text-brand-300 hover:text-brand-100 text-2xl leading-none px-2"
+              className="text-brand-300 hover:text-brand-100 text-2xl leading-none px-2 rounded focus:outline-none focus:ring-2 focus:ring-accent-400"
               aria-label="Close panel"
             >
               ×
@@ -186,6 +217,14 @@ export default function App() {
         </div>
       </div>
     </>
+  );
+}
+
+function MapLoading() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-brand-900 text-brand-300 text-sm">
+      Loading map...
+    </div>
   );
 }
 

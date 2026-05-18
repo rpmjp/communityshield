@@ -37,7 +37,8 @@ export default function BeatDetailPanel({
       })
       .catch((e) => {
         if (cancelled) return;
-        setError(String(e));
+        console.error("[BeatDetailPanel] Beat detail failed", e);
+        setError("Beat details are unavailable. Try another beat or refresh the data.");
         setStats(null);
       });
     return () => { cancelled = true; };
@@ -71,7 +72,7 @@ export default function BeatDetailPanel({
         </div>
         <button
           onClick={onClose}
-          className="text-brand-400 hover:text-brand-100 text-lg leading-none"
+          className="text-brand-400 hover:text-brand-100 text-lg leading-none rounded focus:outline-none focus:ring-2 focus:ring-accent-400"
           aria-label="Close"
         >
           ×
@@ -79,7 +80,7 @@ export default function BeatDetailPanel({
       </div>
 
       {error && (
-        <div className="m-4 text-red-300 bg-red-950/30 border border-red-800 rounded px-3 py-2 text-sm">
+        <div className="m-4 text-red-300 bg-red-950/30 border border-red-800 rounded px-3 py-2 text-sm" role="alert">
           We could not load this beat right now. {error}
         </div>
       )}
@@ -165,7 +166,7 @@ export default function BeatDetailPanel({
           <button
             onClick={useForPrediction}
             className="w-full bg-brand-700 hover:bg-brand-600 border border-brand-600
-                       text-brand-50 text-sm font-medium rounded px-3 py-2 transition-colors"
+                       text-brand-50 text-sm font-medium rounded px-3 py-2 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400"
           >
             Use this beat for prediction
           </button>
